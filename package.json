@@ -1,0 +1,7 @@
+{
+  "name": "eventify",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"cd backend && bun run dev\" \"cd frontend && bun run dev -- --open\""
+  }
+}
