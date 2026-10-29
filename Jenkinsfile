@@ -1,0 +1,43 @@
+pipeline {
+    agent any
+
+    environment {
+        BUN_INSTALL = "/var/jenkins_home/.bun"
+        PATH = "$BUN_INSTALL/bin:$PATH"
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh 'bun install'
+                sh 'cd backend && bun install'
+                sh 'cd frontend && bun install'
+            }
+        }
+
+        stage('Run Automated Tests & Coverage') {
+            steps {
+                // Menjalankan test dan membuat lcov.info untuk SonarQube
+                sh 'bun run test:coverage'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                // Di Jenkins butuh SonarScanner plugin
+                script {
+                    def scannerHome = tool 'SonarScanner'
+                    withSonarQubeEnv('SonarQubeServer') {
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
+                }
+            }
+        }
+    }
+}

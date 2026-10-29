@@ -1,14 +1,10 @@
 {
-  "name": "backend",
+  "name": "eventify-backend",
   "module": "src/server.ts",
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/server.ts"
-  },
-  "dependencies": {
-    "@prisma/client": "6"
-  },
-  "devDependencies": {
-    "prisma": "6"
+    "dev": "bun --watch src/server.ts",
+    "test": "bun test",
+    "test:coverage": "bun test --coverage --coverage-reporter=lcov"
   }
 }

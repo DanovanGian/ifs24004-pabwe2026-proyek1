@@ -2,6 +2,8 @@
   "name": "eventify",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"cd backend && bun run dev\" \"cd frontend && bun run dev -- --open\""
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"cd backend && bun run dev\" \"cd frontend && bun run dev -- --open\"",
+    "test": "cd backend && bun test",
+    "test:coverage": "cd backend && bun run test:coverage"
   }
 }
