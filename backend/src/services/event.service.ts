@@ -54,7 +54,6 @@ export class EventService {
     });
   }
 
-  // Khusus Organizer Pemilik atau Admin untuk Edit Acara
   static async updateEvent(eventId: string, userId: string, userRole: string, data: any) {
     const event = await prisma.event.findUnique({ where: { id: eventId } });
     if (!event) throw new Error('Acara tidak ditemukan');
@@ -84,6 +83,7 @@ export class EventService {
     });
   }
 
+  // Hapus Acara Secara Bersih (Cascade Delete di SQLite)
   static async deleteEvent(eventId: string, userId: string, userRole: string) {
     const event = await prisma.event.findUnique({ where: { id: eventId } });
     if (!event) throw new Error('Acara tidak ditemukan');
@@ -92,7 +92,13 @@ export class EventService {
       throw new Error('Anda tidak berhak menghapus acara ini');
     }
 
-    await prisma.event.delete({ where: { id: eventId } });
-    return { success: true };
+    // Hapus relasi turunan terlebih dahulu dalam satu transaksi aman
+    return await prisma.$transaction(async (tx) => {
+      await tx.ticket.deleteMany({ where: { eventId } });
+      await tx.registration.deleteMany({ where: { eventId } });
+      await tx.ticketType.deleteMany({ where: { eventId } });
+      await tx.event.delete({ where: { id: eventId } });
+      return { success: true };
+    });
   }
 }
