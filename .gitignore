@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+bun.lock
+
+# Build & Cache
+.svelte-kit/
+build/
+dist/
+.cache/
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Database SQLite lokal
+backend/prisma/*.db
+backend/prisma/*.db-journal
+
+# Coverage reports
+coverage/
+*.lcov
+
+# OS & Editor
+.DS_Store
+.idea/
+.vscode/
