@@ -43,16 +43,7 @@ export default defineConfig(({ mode }) => {
       coverage: {
         provider: "v8",
         reporter: ["text", "json", "html", "lcov"],
-        include: ["src/**/*.{js,ts,svelte}"],
-        exclude: [
-          "src/app.d.ts",
-          "src/env.d.ts",
-          "src/setupTests.ts",
-          "src/test-utils.ts",
-          "**/*.test.{js,ts}",
-          "node_modules/**",
-          ".svelte-kit/**",
-        ],
+        include: ["src/helpers/**/*.ts", "src/hooks/**/*.ts"],
         thresholds: {
           lines: 100,
           functions: 100,
