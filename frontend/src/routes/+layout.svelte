@@ -10,7 +10,8 @@
 </script>
 
 {#if isAuthRoute}
-  <div class="min-w-[1024px] min-h-screen bg-slate-50 flex items-center justify-center p-6">
+  <!-- Fullscreen Edge-to-Edge untuk Rute Auth tanpa Padding Pembatas -->
+  <div class="min-w-[1024px] min-h-screen w-full bg-white dark:bg-[#090D16]">
     {@render children()}
   </div>
 {:else}
