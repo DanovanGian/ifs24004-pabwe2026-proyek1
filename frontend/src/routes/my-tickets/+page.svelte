@@ -2,10 +2,11 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { apiRequest } from '../../helpers/apiHelper.ts';
-  import { Ticket, Calendar, MapPin, CheckCircle2, Clock, Sparkles } from 'lucide-svelte';
+  import { Ticket, Calendar, MapPin, CheckCircle2, Clock, Sparkles, Printer, Download } from 'lucide-svelte';
 
   let tickets = $state<any[]>([]);
   let isLoading = $state(true);
+  let activePrintTicketId = $state<string | null>(null);
 
   async function loadMyTickets() {
     const token = localStorage.getItem('token');
@@ -24,25 +25,37 @@
     }
   }
 
+  // Fungsi Cetak Tiket ke PDF
+  function handlePrintTicket(ticketId: string) {
+    activePrintTicketId = ticketId;
+    // Beri sedikit jeda agar DOM terfokus sebelum memicu dialog print browser
+    setTimeout(() => {
+      window.print();
+      activePrintTicketId = null;
+    }, 150);
+  }
+
   onMount(() => {
     loadMyTickets();
   });
 </script>
 
 <div class="max-w-5xl mx-auto space-y-8">
-  <div>
+  <div class="no-print">
     <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-100 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 text-xs font-bold mb-2">
       <Sparkles class="w-3.5 h-3.5" />
       Dompet Tiket Digital
     </div>
     <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Tiket Terdaftar Milik Anda</h1>
-    <p class="text-slate-500 dark:text-slate-400 text-xs mt-1">Tunjukkan QR Code berikut di meja registrasi venue pada hari acara berlangsung.</p>
+    <p class="text-slate-500 dark:text-slate-400 text-xs mt-1">
+      Tunjukkan QR Code di venue atau klik tombol <strong>Cetak / Unduh PDF</strong> untuk menyimpan dokumen fisik tiket.
+    </p>
   </div>
 
   {#if isLoading}
     <div class="text-center py-24 text-slate-400 font-medium">Memuat tiket digital Anda...</div>
   {:else if tickets.length === 0}
-    <div class="text-center py-20 bg-white dark:bg-[#0F172A] rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs max-w-lg mx-auto p-10">
+    <div class="text-center py-20 bg-white dark:bg-[#0F172A] rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs max-w-lg mx-auto p-10 no-print">
       <Ticket class="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
       <h3 class="text-slate-800 dark:text-slate-200 font-bold text-base">Belum Ada Tiket Acara</h3>
       <p class="text-slate-500 dark:text-slate-400 text-xs mt-1 mb-6">Anda belum memesan tiket apa pun.</p>
@@ -53,14 +66,14 @@
   {:else}
     <div class="space-y-6">
       {#each tickets as tkt}
-        <!-- Real Boarding Pass Ticket Design with Adaptive Notches -->
-        <div class="relative bg-white dark:bg-[#0F172A] rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-sm hover:shadow-xl dark:hover:shadow-indigo-500/5 transition duration-300 flex overflow-hidden">
+        <!-- Tiket Card (Mendukung Tampilan Layar & Cetak PDF) -->
+        <div class="relative bg-white dark:bg-[#0F172A] rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-sm hover:shadow-xl dark:hover:shadow-indigo-500/5 transition duration-300 flex overflow-hidden {activePrintTicketId === tkt.id ? 'ticket-print-target' : activePrintTicketId !== null ? 'hidden' : ''}">
           
-          <!-- Lubang Perforasi Adaptif (Mengikuti Latar Belakang Gelap dan Terang) -->
-          <div class="absolute right-[216px] -top-3.5 w-7 h-7 bg-[#F8FAFC] dark:bg-[#090D16] rounded-full border border-slate-200/80 dark:border-white/[0.08] z-10"></div>
-          <div class="absolute right-[216px] -bottom-3.5 w-7 h-7 bg-[#F8FAFC] dark:bg-[#090D16] rounded-full border border-slate-200/80 dark:border-white/[0.08] z-10"></div>
+          <!-- Lubang Perforasi Tiket -->
+          <div class="absolute right-[216px] -top-3.5 w-7 h-7 bg-[#F8FAFC] dark:bg-[#090D16] rounded-full border border-slate-200/80 dark:border-white/[0.08] z-10 no-print"></div>
+          <div class="absolute right-[216px] -bottom-3.5 w-7 h-7 bg-[#F8FAFC] dark:bg-[#090D16] rounded-full border border-slate-200/80 dark:border-white/[0.08] z-10 no-print"></div>
 
-          <!-- Main Stub (Informasi Acara) -->
+          <!-- Bagian Kiri: Informasi Acara -->
           <div class="flex-1 p-8 flex flex-col justify-between space-y-6">
             <div class="flex justify-between items-start">
               <div>
@@ -98,15 +111,26 @@
               </div>
             </div>
 
-            <div class="text-[11px] font-mono text-slate-400 dark:text-slate-500">
-              Pass ID: <span class="text-slate-700 dark:text-slate-300 font-semibold">{tkt.id}</span>
+            <!-- Footer Tiket: ID & Tombol Cetak PDF -->
+            <div class="flex justify-between items-center pt-2">
+              <div class="text-[11px] font-mono text-slate-400 dark:text-slate-500">
+                Pass ID: <span class="text-slate-700 dark:text-slate-300 font-semibold">{tkt.id}</span>
+              </div>
+
+              <!-- Tombol Cetak / Download PDF -->
+              <button 
+                onclick={() => handlePrintTicket(tkt.id)}
+                class="no-print px-4 py-2 bg-slate-900 dark:bg-indigo-600 hover:bg-indigo-600 dark:hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs cursor-pointer hover:scale-105 active:scale-95">
+                <Printer class="w-3.5 h-3.5" />
+                <span>Cetak / Unduh PDF</span>
+              </button>
             </div>
           </div>
 
           <!-- Garis Robek Perforasi Putus-putus -->
           <div class="border-r-2 border-dashed border-slate-200 dark:border-white/[0.1] my-4"></div>
 
-          <!-- Right Stub (QR Code Scanner) -->
+          <!-- Bagian Kanan: QR Code Scanner -->
           <div class="w-[230px] p-6 bg-slate-50/70 dark:bg-white/[0.02] flex flex-col items-center justify-center text-center space-y-3">
             <div class="bg-white p-2.5 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-md">
               <img src={tkt.qrDataUrl} alt="QR Code" class="w-32 h-32 rounded-lg" />

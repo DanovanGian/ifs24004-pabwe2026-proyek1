@@ -14,7 +14,7 @@ body {
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-/* Transisi halus saat toggle tema berpindah */
+/* Transisi Halus */
 html.theme-transitioning *,
 html.theme-transitioning *::before,
 html.theme-transitioning *::after {
@@ -22,5 +22,42 @@ html.theme-transitioning *::after {
               border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
               color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
               box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  transition-delay: 0s !important;
+}
+
+/* ==========================================
+   ATURAN KHUSUS CETAK KE PDF (@media print)
+   ========================================== */
+@media print {
+  /* Sembunyikan elemen navigasi, tombol, footer, dan background gelap */
+  header, footer, .no-print, button {
+    display: none !important;
+  }
+
+  body {
+    background-color: white !important;
+    color: black !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Pusatkan tiket cetak */
+  .ticket-print-target {
+    border: 2px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    margin: 2rem auto !important;
+    max-width: 800px !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  .ticket-print-target * {
+    color: black !important;
+  }
+
+  /* Pastikan QR Code tercetak tajam */
+  img {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
