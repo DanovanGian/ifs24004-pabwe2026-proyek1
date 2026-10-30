@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { apiRequest } from '#lib/api/client.ts';
-  import { auth } from '#lib/stores/auth.svelte.ts';
+  import { goto } from '$app/navigation';
+  import { apiRequest } from '../../../helpers/apiHelper.ts';
+  import Swal from 'sweetalert2';
 
   let activeTab = $state<'scanner' | 'create'>('scanner');
   let qrTokenInput = $state('');
@@ -12,16 +13,15 @@
   // Form Buat Acara
   let title = $state('');
   let description = $state('');
-  let categoryId = $state('cat-1');
+  let categoryId = $state('');
+  let categories = $state<any[]>([]);
   let date = $state('');
   let location = $state('');
   let ticketName = $state('General Pass');
   let ticketPrice = $state(100000);
   let ticketQuota = $state(50);
   let isSubmitting = $state(false);
-  let successMsg = $state('');
 
-  // 1. Validasi Check-In QR Token
   async function handleCheckIn(e: SubmitEvent) {
     e.preventDefault();
     scanResult = null;
@@ -36,17 +36,15 @@
       scanResult = res.data;
       qrTokenInput = '';
     } catch (err: any) {
-      scanError = err.message;
+      scanError = err.message || 'Check-in gagal.';
     } finally {
       isScanning = false;
     }
   }
 
-  // 2. Pembuatan Acara Baru
   async function handleCreateEvent(e: SubmitEvent) {
     e.preventDefault();
     isSubmitting = true;
-    successMsg = '';
 
     try {
       await apiRequest('/events', {
@@ -63,20 +61,41 @@
         })
       });
 
-      successMsg = 'Acara berhasil diajukan! Menunggu persetujuan Admin.';
+      Swal.fire({
+        icon: 'success',
+        title: 'Acara Diajukan',
+        text: 'Acara Anda berhasil diajukan dan menunggu persetujuan Admin.',
+      });
+
       title = '';
       description = '';
-    } catch (err: any) {
-      alert(err.message);
+      activeTab = 'scanner';
+    } catch {
+      // Handled
     } finally {
       isSubmitting = false;
     }
   }
 
-  onMount(() => {
-    if (!auth.user || (auth.user.role !== 'ORGANIZER' && auth.user.role !== 'ADMIN')) {
-      alert('Halaman ini khusus untuk akun Organizer');
-      window.location.href = '/login';
+  onMount(async () => {
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    if (!user || (user.role !== 'ORGANIZER' && user.role !== 'ADMIN')) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Akses Terbatas',
+        text: 'Halaman ini khusus untuk Organizer.',
+      });
+      goto('/auth/login');
+      return;
+    }
+
+    try {
+      const catRes = await apiRequest('/events/categories');
+      categories = catRes.data || [];
+      if (categories.length > 0) categoryId = categories[0].id;
+    } catch {
+      // Handled
     }
   });
 </script>
@@ -85,10 +104,9 @@
   <div class="flex justify-between items-center">
     <div>
       <h1 class="text-3xl font-black text-slate-900 tracking-tight">Organizer Dashboard</h1>
-      <p class="text-slate-500 text-sm mt-1">Kelola check-in pengunjung dan publikasi acara baru.</p>
+      <p class="text-slate-500 text-sm mt-1">Validasi check-in QR peserta dan buat acara baru.</p>
     </div>
 
-    <!-- Tombol Tab Navigasi -->
     <div class="flex bg-slate-200 p-1.5 rounded-2xl gap-1">
       <button 
         onclick={() => activeTab = 'scanner'}
@@ -103,14 +121,11 @@
     </div>
   </div>
 
-  <!-- TAB 1: VALIDASI TIKET QR -->
   {#if activeTab === 'scanner'}
     <div class="grid grid-cols-2 gap-8">
       <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-xs space-y-4">
-        <h3 class="font-bold text-lg text-slate-900">Validasi Check-In Hari Acara</h3>
-        <p class="text-slate-500 text-xs leading-relaxed">
-          Masukkan token QR tiket yang ditunjukkan peserta (Token dapat disalin dari ID tiket atau discan).
-        </p>
+        <h3 class="font-bold text-lg text-slate-900">Validasi Check-In Tiket</h3>
+        <p class="text-slate-500 text-xs">Masukkan token QR tiket peserta untuk check-in.</p>
 
         <form onsubmit={handleCheckIn} class="space-y-4 pt-2">
           <div>
@@ -128,28 +143,23 @@
             type="submit" 
             disabled={isScanning}
             class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition cursor-pointer shadow-md disabled:opacity-50">
-            {isScanning ? 'Memverifikasi...' : '✓ Validasi & Check-In Tiket'}
+            {isScanning ? 'Memverifikasi...' : '✓ Validasi Tiket'}
           </button>
         </form>
       </div>
 
-      <!-- Hasil Check-in -->
       <div class="flex flex-col justify-center">
         {#if scanResult}
           <div class="bg-emerald-50 border-2 border-emerald-300 p-8 rounded-3xl space-y-3">
             <span class="px-3 py-1 bg-emerald-600 text-white text-xs font-black rounded-full uppercase">Check-In Berhasil</span>
             <h2 class="text-2xl font-black text-emerald-900">{scanResult.eventTitle}</h2>
-            <div class="text-emerald-800 text-sm">
-              Peserta: <strong>{scanResult.participantName}</strong>
-            </div>
-            <div class="text-xs text-emerald-600">
-              Waktu Check-In: {new Date(scanResult.checkedInAt).toLocaleTimeString('id-ID')}
-            </div>
+            <div class="text-emerald-800 text-sm">Peserta: <strong>{scanResult.participantName}</strong></div>
+            <div class="text-xs text-emerald-600">Waktu: {new Date(scanResult.checkedInAt).toLocaleTimeString('id-ID')}</div>
           </div>
         {:else if scanError}
           <div class="bg-rose-50 border-2 border-rose-300 p-8 rounded-3xl space-y-2">
             <span class="px-3 py-1 bg-rose-600 text-white text-xs font-black rounded-full uppercase">Check-In Ditolak</span>
-            <h2 class="text-xl font-bold text-rose-900">Tiket Tidak Sah / Kedaluwarsa</h2>
+            <h2 class="text-xl font-bold text-rose-900">Tiket Tidak Sah / Sudah Digunakan</h2>
             <p class="text-rose-700 text-sm">{scanError}</p>
           </div>
         {:else}
@@ -159,31 +169,23 @@
         {/if}
       </div>
     </div>
-
-  <!-- TAB 2: BUAT ACARA -->
   {:else}
     <div class="max-w-2xl mx-auto bg-white p-8 rounded-3xl border border-slate-200 shadow-xs">
       <h3 class="font-bold text-xl text-slate-900 mb-1">Formulir Publikasi Acara</h3>
-      <p class="text-xs text-slate-500 mb-6">Acara akan direview oleh Administrator sebelum tampil di katalog publik.</p>
-
-      {#if successMsg}
-        <div class="mb-4 p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-xl font-semibold">
-          {successMsg}
-        </div>
-      {/if}
+      <p class="text-xs text-slate-500 mb-6">Acara akan direview Administrator sebelum tampil di publik.</p>
 
       <form onsubmit={handleCreateEvent} class="space-y-4">
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Judul Acara</label>
-          <input type="text" bind:value={title} required placeholder="Contoh: AI & Web3 Workshop" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-indigo-600" />
+          <input type="text" bind:value={title} required placeholder="Contoh: Workshop Cloud & Bun" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-indigo-600" />
         </div>
 
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kategori</label>
           <select bind:value={categoryId} class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-indigo-600 bg-white">
-            <option value="cat-1">Teknologi & AI</option>
-            <option value="cat-2">Musik & Konser</option>
-            <option value="cat-3">Bisnis & Karir</option>
+            {#each categories as cat}
+              <option value={cat.id}>{cat.name}</option>
+            {/each}
           </select>
         </div>
 
@@ -193,17 +195,16 @@
             <input type="datetime-local" bind:value={date} required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-indigo-600" />
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Lokasi / Venue</label>
-            <input type="text" bind:value={location} required placeholder="Jakarta / Zoom Hybrid" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-indigo-600" />
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Lokasi</label>
+            <input type="text" bind:value={location} required placeholder="Auditorium Delcom" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-indigo-600" />
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Deskripsi Lengkap</label>
-          <textarea bind:value={description} rows="3" required placeholder="Jelaskan agenda dan manfaat acara..." class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-indigo-600"></textarea>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Deskripsi</label>
+          <textarea bind:value={description} rows="3" required placeholder="Detail acara..." class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-indigo-600"></textarea>
         </div>
 
-        <!-- Setting Tiket Pertama -->
         <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
           <span class="text-xs font-extrabold text-indigo-600 uppercase">Pengaturan Tiket Utama</span>
           <div class="grid grid-cols-3 gap-3">
@@ -216,7 +217,7 @@
               <input type="number" bind:value={ticketPrice} min="0" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs" />
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Kuota Kursi</label>
+              <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Kuota</label>
               <input type="number" bind:value={ticketQuota} min="1" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs" />
             </div>
           </div>

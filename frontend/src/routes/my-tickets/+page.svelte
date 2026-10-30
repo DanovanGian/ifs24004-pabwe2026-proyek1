@@ -1,22 +1,23 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { apiRequest } from '#lib/api/client.ts';
-  import { auth } from '#lib/stores/auth.svelte.ts';
+  import { goto } from '$app/navigation';
+  import { apiRequest } from '../../helpers/apiHelper.ts';
 
   let tickets = $state<any[]>([]);
   let isLoading = $state(true);
 
   async function loadMyTickets() {
-    if (!auth.user) {
-      window.location.href = '/login';
+    const token = localStorage.getItem('token');
+    if (!token) {
+      goto('/auth/login');
       return;
     }
 
     try {
       const res = await apiRequest('/my-tickets');
       tickets = res.data || [];
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // Handled
     } finally {
       isLoading = false;
     }
@@ -46,7 +47,6 @@
     <div class="grid grid-cols-2 gap-6">
       {#each tickets as tkt}
         <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex justify-between items-center relative overflow-hidden">
-          <!-- Status Ribbon -->
           <div class="absolute top-4 right-4">
             {#if tkt.isUsed}
               <span class="px-3 py-1 bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-black rounded-full uppercase">
@@ -59,22 +59,16 @@
             {/if}
           </div>
 
-          <!-- Data Tiket -->
           <div class="space-y-3 max-w-[280px]">
             <span class="text-xs font-extrabold text-indigo-600 uppercase tracking-wider">{tkt.ticketTypeName}</span>
             <h3 class="font-extrabold text-lg text-slate-900 leading-snug">{tkt.eventTitle}</h3>
-            
             <div class="text-xs text-slate-500 space-y-1">
               <div>📍 {tkt.eventLocation}</div>
               <div>📅 {new Date(tkt.eventDate).toLocaleDateString('id-ID', { dateStyle: 'medium' })}</div>
             </div>
-
-            <div class="pt-2 text-[10px] font-mono text-slate-400 truncate">
-              ID: {tkt.qrToken}
-            </div>
+            <div class="pt-2 text-[10px] font-mono text-slate-400 truncate">ID: {tkt.qrToken}</div>
           </div>
 
-          <!-- QR Code Display -->
           <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center">
             <img src={tkt.qrDataUrl} alt="QR Code Tiket" class="w-32 h-32 rounded-lg" />
             <span class="text-[10px] font-semibold text-slate-400 mt-1">Scan saat masuk</span>

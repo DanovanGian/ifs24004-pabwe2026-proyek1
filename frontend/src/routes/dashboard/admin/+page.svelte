@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { apiRequest } from '#lib/api/client.ts';
-  import { auth } from '#lib/stores/auth.svelte.ts';
+  import { goto } from '$app/navigation';
+  import { apiRequest } from '../../../helpers/apiHelper.ts';
+  import { formatRupiah } from '../../../helpers/toolsHelper.ts';
+  import Swal from 'sweetalert2';
 
   let summary = $state<any>(null);
   let pendingEvents = $state<any[]>([]);
@@ -9,15 +11,13 @@
 
   async function loadAdminData() {
     try {
-      // 1. Ambil Summary Metrik Platform
       const sumRes = await apiRequest('/dashboard/summary');
       summary = sumRes.data;
 
-      // 2. Ambil Acara yang butuh Moderasi
       const evtRes = await apiRequest('/events?status=PENDING_APPROVAL');
       pendingEvents = evtRes.data || [];
-    } catch (err: any) {
-      console.error(err);
+    } catch {
+      // Ditangani oleh apiHelper
     } finally {
       isLoading = false;
     }
@@ -29,17 +29,29 @@
         method: 'PATCH',
         body: JSON.stringify({ status: newStatus }),
       });
-      alert(`Acara berhasil di-${newStatus}`);
+      Swal.fire({
+        icon: 'success',
+        title: 'Status Diperbarui',
+        text: `Acara telah di-${newStatus}`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
       loadAdminData();
-    } catch (err: any) {
-      alert(`Gagal: ${err.message}`);
+    } catch {
+      // Ditangani oleh apiHelper
     }
   }
 
   onMount(() => {
-    if (!auth.user || auth.user.role !== 'ADMIN') {
-      alert('Akses Terbatas: Hanya untuk Administrator');
-      window.location.href = '/login';
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    if (!user || user.role !== 'ADMIN') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Akses Terbatas',
+        text: 'Halaman ini khusus Administrator.',
+      });
+      goto('/auth/login');
       return;
     }
     loadAdminData();
@@ -49,46 +61,33 @@
 <div class="max-w-6xl mx-auto space-y-8">
   <div>
     <h1 class="text-3xl font-black text-slate-900 tracking-tight">Admin Moderation & Analytics</h1>
-    <p class="text-slate-500 text-sm mt-1">Pantau seluruh ekosistem transaksi dan setujui acara masuk.</p>
+    <p class="text-slate-500 text-sm mt-1">Pantau transaksi platform dan moderasi pengajuan acara.</p>
   </div>
 
-  <!-- Statistik Global Kartu (4 Grid Desktop) -->
   {#if summary}
     <div class="grid grid-cols-4 gap-6">
       <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
         <div class="text-slate-400 text-xs font-bold uppercase">Total Pendapatan</div>
-        <div class="text-2xl font-black text-indigo-600 mt-2">
-          Rp {summary.totalRevenue.toLocaleString('id-ID')}
-        </div>
+        <div class="text-2xl font-black text-indigo-600 mt-2">{formatRupiah(summary.totalRevenue)}</div>
       </div>
-
       <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
         <div class="text-slate-400 text-xs font-bold uppercase">Tiket Terjual</div>
-        <div class="text-2xl font-black text-slate-800 mt-2">
-          {summary.totalTicketsSold} Tiket
-        </div>
+        <div class="text-2xl font-black text-slate-800 mt-2">{summary.totalTicketsSold} Tiket</div>
       </div>
-
       <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
         <div class="text-slate-400 text-xs font-bold uppercase">Total Acara</div>
-        <div class="text-2xl font-black text-slate-800 mt-2">
-          {summary.totalEvents} Acara
-        </div>
+        <div class="text-2xl font-black text-slate-800 mt-2">{summary.totalEvents} Acara</div>
       </div>
-
       <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
         <div class="text-slate-400 text-xs font-bold uppercase">Pengguna Terdaftar</div>
-        <div class="text-2xl font-black text-slate-800 mt-2">
-          {summary.totalUsers} User
-        </div>
+        <div class="text-2xl font-black text-slate-800 mt-2">{summary.totalUsers} User</div>
       </div>
     </div>
   {/if}
 
-  <!-- Antrean Moderasi Acara -->
   <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
     <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-      <h3 class="font-bold text-lg text-slate-900">Antrean Moderasi Acara Masuk</h3>
+      <h3 class="font-bold text-lg text-slate-900">Antrean Moderasi Acara</h3>
       <span class="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-full border border-amber-200">
         {pendingEvents.length} Menunggu Persetujuan
       </span>
@@ -96,7 +95,7 @@
 
     {#if pendingEvents.length === 0}
       <div class="text-center py-16 text-slate-400 font-medium">
-        Tidak ada acara baru yang memerlukan tinjauan saat ini.
+        Tidak ada acara baru yang memerlukan tinjauan.
       </div>
     {:else}
       <div class="divide-y divide-slate-100">
@@ -111,12 +110,11 @@
               </div>
             </div>
 
-            <!-- Tombol Aksi Moderasi -->
             <div class="flex gap-3">
               <button 
                 onclick={() => updateStatus(event.id, 'APPROVED')}
-                class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer transition">
-                ✓ Setujui (Publikasi)
+                class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer transition">
+                ✓ Setujui
               </button>
               <button 
                 onclick={() => updateStatus(event.id, 'REJECTED')}

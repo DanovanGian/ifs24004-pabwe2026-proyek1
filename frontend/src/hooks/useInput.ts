@@ -1,9 +1,9 @@
 export function useInput(initialValue = '') {
-  let value = $state(initialValue);
+  let value = initialValue;
 
   function onChange(e: Event) {
     const target = e.target as HTMLInputElement;
-    value = target.value;
+    value = target ? target.value : '';
   }
 
   function reset() {
@@ -11,8 +11,12 @@ export function useInput(initialValue = '') {
   }
 
   return {
-    get value() { return value; },
-    set value(v: string) { value = v; },
+    get value() {
+      return value;
+    },
+    set value(v: string) {
+      value = v;
+    },
     onChange,
     reset,
   };

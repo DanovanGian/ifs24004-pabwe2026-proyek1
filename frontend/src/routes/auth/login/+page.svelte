@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { apiRequest } from '../../helpers/apiHelper.ts';
+  import { apiRequest } from '../../../helpers/apiHelper.ts';
   import Swal from 'sweetalert2';
 
   let email = $state('');

@@ -1,7 +1,7 @@
 import Swal from 'sweetalert2';
 
 export async function apiRequest<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const token = localStorage.getItem('token');
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -18,18 +18,18 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestInit
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      throw new Error(data.message || 'Terjadi kesalahan pada request.');
+      const errorMsg = data && data.message ? data.message : 'Terjadi kesalahan pada request.';
+      throw new Error(errorMsg);
     }
 
     return data;
   } catch (error: any) {
-    if (typeof window !== 'undefined') {
-      Swal.fire({
-        icon: 'error',
-        title: 'Oops...',
-        text: error.message || 'Gagal terhubung ke server',
-      });
-    }
+    const message = error && error.message ? error.message : 'Gagal terhubung ke server';
+    Swal.fire({
+      icon: 'error',
+      title: 'Oops...',
+      text: message,
+    });
     throw error;
   }
 }
