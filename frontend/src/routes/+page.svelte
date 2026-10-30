@@ -56,7 +56,7 @@
     </div>
   </div>
 
-  <!-- Search Bar & Kategori -->
+  <!-- Search Bar & Filter Kategori -->
   <div class="bg-white dark:bg-[#0F172A] p-3 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] shadow-sm flex items-center gap-4">
     <div class="relative flex-1">
       <Search class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -72,12 +72,14 @@
     <!-- Category Filter Pills -->
     <div class="flex items-center gap-1.5 pr-2">
       <button 
+        type="button"
         onclick={() => { selectedCategory = ''; loadData(); }}
         class="px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer {selectedCategory === '' ? 'bg-slate-900 dark:bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}">
         Semua Kategori
       </button>
       {#each categories as cat}
         <button 
+          type="button"
           onclick={() => { selectedCategory = cat.id; loadData(); }}
           class="px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer {selectedCategory === cat.id ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}">
           {cat.name}
@@ -86,7 +88,7 @@
     </div>
   </div>
 
-  <!-- Grid Acara Modern 3-Kolom dengan Foto Sampul -->
+  <!-- Grid Acara: Seluruh Kartu Dapat Diklik (Clickable Card) -->
   {#if isLoading}
     <div class="text-center py-24 text-slate-400 font-medium">Memuat katalog acara...</div>
   {:else if events.length === 0}
@@ -97,9 +99,12 @@
   {:else}
     <div class="grid grid-cols-3 gap-8">
       {#each events as event}
-        <div class="group bg-white dark:bg-[#0F172A] rounded-3xl border border-slate-200/80 dark:border-white/[0.08] overflow-hidden shadow-xs hover:shadow-2xl dark:hover:shadow-indigo-500/10 hover:-translate-y-1 transition duration-300 flex flex-col justify-between">
+        <!-- ENTIRE CARD IS A CLICKABLE LINK -->
+        <a 
+          href={`/events/${event.id}`}
+          class="group bg-white dark:bg-[#0F172A] rounded-3xl border border-slate-200/80 dark:border-white/[0.08] overflow-hidden shadow-xs hover:shadow-2xl dark:hover:shadow-indigo-500/10 hover:-translate-y-1.5 transition duration-300 flex flex-col justify-between cursor-pointer block text-left">
           
-          <!-- Foto Sampul Acara -->
+          <!-- Foto Sampul Acara (Zoom-in halus saat hover) -->
           <div class="relative h-48 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
             <img 
               src={event.imageUrl || fallbackImage} 
@@ -114,13 +119,14 @@
             </div>
           </div>
 
-          <div class="p-6 space-y-4">
-            <div class="text-xs text-slate-400 dark:text-slate-500 font-semibold flex items-center gap-1">
-              <Calendar class="w-3.5 h-3.5 text-indigo-500" />
-              {new Date(event.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-            </div>
-
+          <!-- Informasi Acara -->
+          <div class="p-6 space-y-4 flex-1 flex flex-col justify-between">
             <div>
+              <div class="text-xs text-slate-400 dark:text-slate-500 font-semibold flex items-center gap-1 mb-2">
+                <Calendar class="w-3.5 h-3.5 text-indigo-500" />
+                {new Date(event.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </div>
+
               <h3 class="font-extrabold text-base text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition leading-snug line-clamp-1">
                 {event.title}
               </h3>
@@ -132,7 +138,7 @@
             <div class="pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs">
               <span class="text-slate-400 font-medium flex items-center gap-1">
                 <Tag class="w-3.5 h-3.5" />
-                {event.ticketTypes?.length || 0} Tiket
+                {event.ticketTypes?.length || 0} Jenis Tiket
               </span>
               <div class="text-right">
                 <span class="text-[10px] text-slate-400 block font-semibold">Mulai</span>
@@ -143,16 +149,14 @@
             </div>
           </div>
 
-          <!-- Tombol Aksi -->
+          <!-- Tombol Aksi Visual (Berubah warna & icon panah bergeser saat kartu di-hover) -->
           <div class="p-5 bg-slate-50/70 dark:bg-white/[0.02] border-t border-slate-100 dark:border-white/[0.06]">
-            <a 
-              href={`/events/${event.id}`}
-              class="w-full py-2.5 bg-slate-900 dark:bg-indigo-600 hover:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-xs group-hover:shadow-md">
-              <span>Pesan Tiket</span>
-              <ArrowRight class="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
-            </a>
+            <div class="w-full py-2.5 bg-slate-900 dark:bg-indigo-600 group-hover:bg-indigo-600 dark:group-hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-xs group-hover:shadow-md">
+              <span>Lihat Detail & Pesan Tiket</span>
+              <ArrowRight class="w-3.5 h-3.5 group-hover:translate-x-1.5 transition-transform duration-300" />
+            </div>
           </div>
-        </div>
+        </a>
       {/each}
     </div>
   {/if}
