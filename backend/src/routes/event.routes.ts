@@ -2,20 +2,21 @@ import { Router } from 'express';
 import { EventController } from '../controllers/event.controller.ts';
 import { requireAuth, requireRole } from '../middleware/auth.middleware.ts';
 import { validate } from '../middleware/validate.middleware.ts';
-import { createEventSchema, updateEventStatusSchema } from '../schemas/event.schema.ts';
+import { createEventSchema, updateEventSchema, updateEventStatusSchema } from '../schemas/event.schema.ts';
 
 const router = Router();
 
-// Rute Publik (Pengunjung)
+// Rute Publik
 router.get('/categories', EventController.getCategories);
 router.get('/', EventController.getAll);
 router.get('/:id', EventController.getById);
 
-// Rute Khusus Organizer
+// Rute Khusus Organizer & Admin
 router.post('/', requireAuth, requireRole(['ORGANIZER', 'ADMIN']), validate(createEventSchema), EventController.create);
+router.put('/:id', requireAuth, requireRole(['ORGANIZER', 'ADMIN']), validate(updateEventSchema), EventController.update);
 router.delete('/:id', requireAuth, EventController.delete);
 
-// Rute Khusus Admin (Moderasi Acara)
+// Rute Khusus Admin
 router.patch('/:id/status', requireAuth, requireRole(['ADMIN']), validate(updateEventStatusSchema), EventController.updateStatus);
 
 export default router;

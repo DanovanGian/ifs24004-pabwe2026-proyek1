@@ -16,6 +16,15 @@ export const createEventSchema = z.object({
   ).min(1, 'Minimal harus ada 1 jenis tiket'),
 });
 
+export const updateEventSchema = z.object({
+  title: z.string().min(5, 'Judul acara minimal 5 karakter'),
+  description: z.string().min(10, 'Deskripsi minimal 10 karakter'),
+  categoryId: z.string().min(1, 'Kategori harus dipilih'),
+  date: z.string().min(1, 'Tanggal acara harus ditentukan'),
+  location: z.string().min(3, 'Lokasi acara harus diisi'),
+  imageUrl: z.string().optional().nullable(),
+});
+
 export const updateEventStatusSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED']),
 });

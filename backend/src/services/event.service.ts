@@ -1,11 +1,12 @@
 import { prisma } from '../data/db.ts';
 
 export class EventService {
-  static async getAllEvents(query?: { search?: string; categoryId?: string; status?: string }) {
+  static async getAllEvents(query?: { search?: string; categoryId?: string; status?: string; organizerId?: string }) {
     const where: any = {};
 
     if (query?.status) where.status = query.status;
     if (query?.categoryId) where.categoryId = query.categoryId;
+    if (query?.organizerId) where.organizerId = query.organizerId;
     if (query?.search) {
       where.OR = [
         { title: { contains: query.search } },
@@ -48,6 +49,29 @@ export class EventService {
             availableQuota: Number(t.quota),
           })),
         },
+      },
+      include: { ticketTypes: true },
+    });
+  }
+
+  // Khusus Organizer Pemilik atau Admin untuk Edit Acara
+  static async updateEvent(eventId: string, userId: string, userRole: string, data: any) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw new Error('Acara tidak ditemukan');
+
+    if (userRole !== 'ADMIN' && event.organizerId !== userId) {
+      throw new Error('Anda tidak memiliki izin mengedit acara ini');
+    }
+
+    return await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        title: data.title,
+        description: data.description,
+        categoryId: data.categoryId,
+        date: new Date(data.date),
+        location: data.location,
+        imageUrl: data.imageUrl || null,
       },
       include: { ticketTypes: true },
     });

@@ -5,11 +5,12 @@ import { prisma } from '../data/db.ts';
 export class EventController {
   static async getAll(req: Request, res: Response) {
     try {
-      const { search, categoryId, status } = req.query;
+      const { search, categoryId, status, organizerId } = req.query;
       const events = await EventService.getAllEvents({
         search: search as string,
         categoryId: categoryId as string,
-        status: (status as any) || 'APPROVED',
+        status: status as string,
+        organizerId: organizerId as string,
       });
       res.json({ status: 'success', data: events });
     } catch (err: any) {
@@ -36,6 +37,15 @@ export class EventController {
       const organizerId = req.user!.id;
       const newEvent = await EventService.createEvent(organizerId, req.body);
       res.status(201).json({ status: 'success', data: newEvent });
+    } catch (err: any) {
+      res.status(400).json({ status: 'error', message: err.message });
+    }
+  }
+
+  static async update(req: Request, res: Response) {
+    try {
+      const updated = await EventService.updateEvent(req.params.id, req.user!.id, req.user!.role, req.body);
+      res.json({ status: 'success', data: updated });
     } catch (err: any) {
       res.status(400).json({ status: 'error', message: err.message });
     }
