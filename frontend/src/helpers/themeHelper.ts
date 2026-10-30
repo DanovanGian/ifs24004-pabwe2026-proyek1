@@ -15,8 +15,16 @@ export function initTheme() {
 }
 
 export function toggleTheme(): 'light' | 'dark' {
+  // Aktifkan transisi halus
+  document.documentElement.classList.add('theme-transitioning');
+
   const isDark = document.documentElement.classList.toggle('dark');
   const theme = isDark ? 'dark' : 'light';
   localStorage.setItem('theme', theme);
+
+  setTimeout(() => {
+    document.documentElement.classList.remove('theme-transitioning');
+  }, 300);
+
   return theme;
 }

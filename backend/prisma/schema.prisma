@@ -12,7 +12,7 @@ model User {
   name         String
   email        String         @unique
   passwordHash String
-  role         String         @default("PARTICIPANT") // ADMIN, ORGANIZER, PARTICIPANT
+  role         String         @default("PARTICIPANT")
   createdAt    DateTime       @default(now())
   events       Event[]
   registrations Registration[]
@@ -34,7 +34,8 @@ model Event {
   categoryId    String
   date          DateTime
   location      String
-  status        String         @default("PENDING_APPROVAL") // PENDING_APPROVAL, APPROVED, REJECTED
+  imageUrl      String?        // Kolom Foto Sampul Acara
+  status        String         @default("PENDING_APPROVAL")
   createdAt     DateTime       @default(now())
 
   organizer     User           @relation(fields: [organizerId], references: [id])
@@ -64,7 +65,7 @@ model Registration {
   ticketTypeId  String
   quantity      Int
   totalPrice    Float
-  status        String     @default("PENDING") // PENDING, PAID, CANCELLED
+  status        String     @default("PENDING")
   createdAt     DateTime   @default(now())
 
   participant   User       @relation(fields: [participantId], references: [id])

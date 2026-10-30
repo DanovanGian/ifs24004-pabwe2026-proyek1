@@ -38,6 +38,7 @@ export class EventService {
         categoryId: data.categoryId,
         date: new Date(data.date),
         location: data.location,
+        imageUrl: data.imageUrl || null,
         status: 'PENDING_APPROVAL',
         ticketTypes: {
           create: data.ticketTypes.map((t: any) => ({

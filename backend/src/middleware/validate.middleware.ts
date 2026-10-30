@@ -8,8 +8,11 @@ export const validate = (schema: AnyZodObject) =>
       next();
     } catch (error) {
       if (error instanceof ZodError) {
+        // Ambil semua pesan validasi Zod dan gabungkan menjadi pesan yang jelas
+        const validationMessages = error.errors.map(e => e.message).join(', ');
         return res.status(400).json({
           status: 'error',
+          message: validationMessages,
           errors: error.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
         });
       }

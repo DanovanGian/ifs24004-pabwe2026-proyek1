@@ -18,7 +18,8 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestInit
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const errorMsg = data && data.message ? data.message : 'Terjadi kesalahan pada request.';
+      // Ambil pesan error spesifik dari Zod backend jika ada
+      const errorMsg = data.message || (data.errors && data.errors[0]?.message) || 'Terjadi kesalahan pada request.';
       throw new Error(errorMsg);
     }
 
@@ -27,7 +28,7 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestInit
     const message = error && error.message ? error.message : 'Gagal terhubung ke server';
     Swal.fire({
       icon: 'error',
-      title: 'Oops...',
+      title: 'Validasi Gagal',
       text: message,
     });
     throw error;
