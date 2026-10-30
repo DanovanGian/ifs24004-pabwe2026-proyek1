@@ -27,6 +27,15 @@ export class EventController {
     }
   }
 
+  static async getParticipants(req: Request, res: Response) {
+    try {
+      const data = await EventService.getEventParticipants(req.params.id, req.user!.id, req.user!.role);
+      res.json({ status: 'success', data });
+    } catch (err: any) {
+      res.status(403).json({ status: 'error', message: err.message });
+    }
+  }
+
   static async getCategories(req: Request, res: Response) {
     const categories = await prisma.category.findMany();
     res.json({ status: 'success', data: categories });

@@ -12,6 +12,7 @@ router.get('/', EventController.getAll);
 router.get('/:id', EventController.getById);
 
 // Rute Khusus Organizer & Admin
+router.get('/:id/participants', requireAuth, requireRole(['ORGANIZER', 'ADMIN']), EventController.getParticipants);
 router.post('/', requireAuth, requireRole(['ORGANIZER', 'ADMIN']), validate(createEventSchema), EventController.create);
 router.put('/:id', requireAuth, requireRole(['ORGANIZER', 'ADMIN']), validate(updateEventSchema), EventController.update);
 router.delete('/:id', requireAuth, EventController.delete);
