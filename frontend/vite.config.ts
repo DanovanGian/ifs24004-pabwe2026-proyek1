@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
     },
     resolve: process.env.VITEST ? { conditions: ["browser"] } : undefined,
     test: {
-      environment: "jsdom",
+      environment: "happy-dom",
       globals: true,
       setupFiles: ["./vitest-setup.ts"],
     },
