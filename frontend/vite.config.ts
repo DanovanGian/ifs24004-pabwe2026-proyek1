@@ -24,6 +24,11 @@ export default defineConfig(({ mode }) => {
       environment: "happy-dom",
       globals: true,
       setupFiles: ["./vitest-setup.ts"],
+      coverage: {
+        provider: "v8",
+        reporter: ["text", "lcov", "html"],
+        include: ["src/helpers/**", "src/hooks/**", "src/routes/+error.svelte"],
+      },
     },
   };
 });
