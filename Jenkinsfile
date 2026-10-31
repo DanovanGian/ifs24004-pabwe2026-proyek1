@@ -31,12 +31,8 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                // Di Jenkins butuh SonarScanner plugin
-                script {
-                    def scannerHome = tool 'SonarScanner'
-                    withSonarQubeEnv('SonarQubeServer') {
-                        sh "${scannerHome}/bin/sonar-scanner"
-                    }
+                withSonarQubeEnv('SonarQubeServer') {
+                    sh 'bunx sonar-scanner'
                 }
             }
         }
