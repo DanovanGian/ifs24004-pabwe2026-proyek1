@@ -9,6 +9,10 @@ const router = Router();
 router.post('/register', validate(registerSchema), AuthController.register);
 router.post('/login', validate(loginSchema), AuthController.login);
 
+// Rute Profil untuk Semua Role yang Telah Login
+router.get('/profile', requireAuth, AuthController.getProfile);
+router.put('/profile', requireAuth, AuthController.updateProfile);
+
 // Khusus Admin
 router.get('/users', requireAuth, requireRole(['ADMIN']), AuthController.getAllUsers);
 router.delete('/users/:id', requireAuth, requireRole(['ADMIN']), AuthController.deleteUser);

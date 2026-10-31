@@ -12,6 +12,7 @@ model User {
   name         String
   email        String         @unique
   passwordHash String
+  avatarUrl    String?        // Kolom Foto Profil
   role         String         @default("PARTICIPANT")
   createdAt    DateTime       @default(now())
   events       Event[]
@@ -35,7 +36,7 @@ model Event {
   date          DateTime
   location      String
   imageUrl      String?
-  layoutType    String         @default("AUDITORIUM") // AUDITORIUM, BALLROOM, STADIUM
+  layoutType    String         @default("AUDITORIUM")
   status        String         @default("PENDING_APPROVAL")
   createdAt     DateTime       @default(now())
 
@@ -82,7 +83,7 @@ model Ticket {
   eventId        String
   ticketTypeId   String
   qrToken        String       @unique
-  seatNumber     String?      // Nomor Kursi Resmi Peserta
+  seatNumber     String?
   isUsed         Boolean      @default(false)
   checkedInAt    DateTime?
   createdAt      DateTime     @default(now())

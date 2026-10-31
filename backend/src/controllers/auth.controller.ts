@@ -23,7 +23,39 @@ export class AuthController {
     }
   }
 
-  // KHUSUS ADMIN: Ambil Semua Pengguna
+  static async getProfile(req: Request, res: Response) {
+    try {
+      const profile = await AuthService.getProfile(req.user!.id);
+      res.json({ status: 'success', data: profile });
+    } catch (err: any) {
+      res.status(404).json({ status: 'error', message: err.message });
+    }
+  }
+
+  static async updateProfile(req: Request, res: Response) {
+    try {
+      const { name, email, avatarUrl, currentPassword, newPassword } = req.body;
+      if (!name || name.trim().length < 2) {
+        return res.status(400).json({ status: 'error', message: 'Nama minimal 2 karakter' });
+      }
+      if (!email || !email.includes('@')) {
+        return res.status(400).json({ status: 'error', message: 'Format email tidak valid' });
+      }
+
+      const updated = await AuthService.updateProfile(req.user!.id, {
+        name,
+        email,
+        avatarUrl: avatarUrl ? avatarUrl.trim() : null,
+        currentPassword,
+        newPassword,
+      });
+
+      res.json({ status: 'success', data: updated, message: 'Profil berhasil diperbarui' });
+    } catch (err: any) {
+      res.status(400).json({ status: 'error', message: err.message });
+    }
+  }
+
   static async getAllUsers(req: Request, res: Response) {
     try {
       const users = await prisma.user.findMany({
@@ -31,11 +63,12 @@ export class AuthController {
           id: true,
           name: true,
           email: true,
+          avatarUrl: true,
           role: true,
           createdAt: true,
-          _count: { select: { events: true, registrations: true } }
+          _count: { select: { events: true, registrations: true } },
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
       });
       res.json({ status: 'success', data: users });
     } catch (err: any) {
@@ -43,7 +76,6 @@ export class AuthController {
     }
   }
 
-  // KHUSUS ADMIN: Hapus Pengguna
   static async deleteUser(req: Request, res: Response) {
     try {
       const { id } = req.params;

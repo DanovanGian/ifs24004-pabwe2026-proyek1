@@ -3,7 +3,7 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import type { Snippet } from 'svelte';
-  import { Ticket, Calendar, Shield, LayoutDashboard, LogOut, Sparkles, Sun, Moon } from 'lucide-svelte';
+  import { Ticket, Calendar, Shield, LayoutDashboard, LogOut, Sparkles, Sun, Moon, User as UserIcon } from 'lucide-svelte';
   import { initTheme, toggleTheme } from '../../../helpers/themeHelper.ts';
 
   let { children }: { children: Snippet } = $props();
@@ -29,7 +29,7 @@
 </script>
 
 <div class="min-w-[1024px] min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 font-sans flex flex-col selection:bg-indigo-500 selection:text-white">
-  <!-- Desktop Sticky Header dengan Efek Kaca Frosted Halus -->
+  <!-- Desktop Sticky Header -->
   <header class="sticky top-0 z-50 bg-white/80 dark:bg-[#0F172A]/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/[0.08] px-10 py-3.5 flex justify-between items-center shadow-xs">
     <div class="flex items-center gap-12">
       <!-- Brand Logo -->
@@ -70,12 +70,18 @@
             Admin Panel
           </a>
         {/if}
+
+        {#if user}
+          <a href="/profile" class="flex items-center gap-1.5 px-4 py-2 rounded-lg transition {page.url.pathname.startsWith('/profile') ? 'bg-white dark:bg-slate-700/80 text-indigo-600 dark:text-white shadow-xs' : 'hover:text-slate-900 dark:hover:text-white'}">
+            <UserIcon class="w-3.5 h-3.5" />
+            Profil
+          </a>
+        {/if}
       </nav>
     </div>
 
     <!-- Right Controls -->
     <div class="flex items-center gap-4">
-      <!-- Dark Mode Switcher -->
       <button 
         onclick={handleThemeChange} 
         aria-label="Ganti Tema"
@@ -89,19 +95,27 @@
 
       {#if user}
         <div class="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-white/[0.08]">
-          <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 text-white font-black text-xs flex items-center justify-center shadow-xs">
-            {user.name.charAt(0)}
-          </div>
-          <div class="text-left">
-            <div class="text-xs font-bold text-slate-800 dark:text-slate-100 leading-none">{user.name}</div>
-            <span class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/70 px-1.5 py-0.5 rounded-sm inline-block mt-1">
-              {user.role}
-            </span>
-          </div>
+          <!-- Chip Profil dengan Foto Avatar Asli -->
+          <a href="/profile" class="flex items-center gap-3 p-1.5 pr-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/[0.04] transition group" title="Buka Profil Saya">
+            <div class="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-tr from-indigo-500 to-purple-500 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
+              {#if user.avatarUrl}
+                <img src={user.avatarUrl} alt={user.name} class="w-full h-full object-cover" />
+              {:else}
+                <span>{user.name.charAt(0).toUpperCase()}</span>
+              {/if}
+            </div>
+            <div class="text-left">
+              <div class="text-xs font-bold text-slate-800 dark:text-slate-100 leading-none group-hover:text-indigo-600 transition">{user.name}</div>
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/70 px-1.5 py-0.5 rounded-sm inline-block mt-1">
+                {user.role}
+              </span>
+            </div>
+          </a>
+
           <button
             onclick={handleLogout}
             title="Keluar Akun"
-            class="ml-2 p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer">
+            class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer">
             <LogOut class="w-4 h-4" />
           </button>
         </div>
@@ -119,12 +133,10 @@
     </div>
   </header>
 
-  <!-- Main Work Area -->
   <main class="flex-1 p-10 max-w-7xl w-full mx-auto">
     {@render children()}
   </main>
 
-  <!-- Clean Footer -->
   <footer class="border-t border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0F172A] py-6 px-10 text-xs text-slate-400 dark:text-slate-500 flex justify-between items-center mt-12">
     <div>
       <span class="font-bold text-slate-600 dark:text-slate-300">Eventify Desktop</span> • Platform Manajemen Tiket Digital
@@ -132,9 +144,9 @@
     <div class="flex items-center gap-4 text-slate-500 dark:text-slate-400 font-medium">
       <span>Keamanan Argon2id</span>
       <span>•</span>
-      <span>Anti-Double QR</span>
+      <span>Foto Profil Kustom</span>
       <span>•</span>
-      <span>Adaptif Gelap & Terang</span>
+      <span>Denah Kursi Interaktif</span>
     </div>
   </footer>
 </div>
