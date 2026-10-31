@@ -175,7 +175,7 @@
           <div class="relative">
             <Mail class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input 
-              type="email" 
+              type="email" id="username" name="username" 
               bind:value={email} 
               required 
               placeholder="nama@email.com" 
@@ -190,7 +190,7 @@
           <div class="relative">
             <Lock class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input 
-              type={showPassword ? 'text' : 'password'} 
+              type={showPassword ? 'text' : 'password'} id="password" name="password" 
               bind:value={password} 
               required 
               placeholder="••••••••" 
@@ -210,7 +210,7 @@
         </div>
 
         <button 
-          type="submit" 
+          type="submit" id="btn-submit" 
           disabled={isLoading}
           class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-600/25 transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 mt-3">
           <span>{isLoading ? 'Memvalidasi Otentikasi...' : 'Masuk ke Platform'}</span>
