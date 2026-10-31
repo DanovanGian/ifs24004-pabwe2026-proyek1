@@ -19,5 +19,11 @@ export default defineConfig(({ mode }) => {
         process.env.VITE_EVENTIFY_BASEURL || env.VITE_EVENTIFY_BASEURL || "http://localhost:3000/api"
       ),
     },
+    resolve: process.env.VITEST ? { conditions: ["browser"] } : undefined,
+    test: {
+      environment: "jsdom",
+      globals: true,
+      setupFiles: ["./vitest-setup.ts"],
+    },
   };
 });
