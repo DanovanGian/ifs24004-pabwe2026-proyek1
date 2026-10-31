@@ -172,7 +172,7 @@
           <div class="relative">
             <Mail class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input 
-              type="email" id="username" name="username" 
+              type="text" id="username" name="username" 
               bind:value={email} 
               required 
               placeholder="nama@email.com" 
