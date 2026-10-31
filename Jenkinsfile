@@ -15,9 +15,10 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'bun install'
-                sh 'cd backend && bun install'
-                sh 'cd frontend && bun install'
+                sh 'rm -rf node_modules frontend/node_modules backend/node_modules'
+                sh 'bun install --frozen-lockfile'
+                sh 'cd backend && bun install --frozen-lockfile'
+                sh 'cd frontend && bun install --frozen-lockfile'
             }
         }
 
