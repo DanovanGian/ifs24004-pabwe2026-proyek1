@@ -25,3 +25,6 @@ coverage/
 .DS_Store
 .idea/
 .vscode/
+node_modules/
+coverage/
+.svelte-kit/
