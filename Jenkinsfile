@@ -24,15 +24,21 @@ pipeline {
 
         stage('Run Automated Tests & Coverage') {
             steps {
-                // Menjalankan test dan membuat lcov.info untuk SonarQube
                 sh 'bun run test:coverage'
             }
         }
 
         stage('SonarQube Analysis') {
+            agent {
+                docker {
+                    image 'sonarsource/sonar-scanner-cli:latest'
+                    reuseNode true
+                    args '--network cicd-network'
+                }
+            }
             steps {
-                withSonarQubeEnv() {
-                    sh 'bunx sonar-scanner'
+                withSonarQubeEnv('SonarQube') {
+                    sh 'sonar-scanner'
                 }
             }
         }
