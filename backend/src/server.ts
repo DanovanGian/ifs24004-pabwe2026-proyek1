@@ -5,7 +5,8 @@ import eventRoutes from './routes/event.routes.ts';
 import ticketRoutes from './routes/ticket.routes.ts';
 
 const app = express();
-const PORT = 3000;
+// Railway akan otomatis menyediakan PORT secara dinamis
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -16,9 +17,9 @@ app.use('/api/events', eventRoutes);
 app.use('/api', ticketRoutes);
 
 app.get('/api/health', (req, res) => {
-  res.json({ message: 'Backend Eventify SQLite aktif!' });
+  res.json({ message: 'Backend Eventify Online di Railway!' });
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Eventify Backend running at: http://localhost:${PORT}`);
+  console.log(`🚀 Eventify Backend running at port: ${PORT}`);
 });
