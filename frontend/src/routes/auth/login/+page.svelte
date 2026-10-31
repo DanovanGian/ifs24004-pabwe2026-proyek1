@@ -14,14 +14,12 @@
   let password = $state('');
   let showPassword = $state(false);
   let isLoading = $state(false);
-  let selectedDemoRole = $state<string | null>('Organizer');
+  let selectedDemoRole = $state<string | null>(null);
   let currentTheme = $state<'light' | 'dark'>('light');
 
   onMount(() => {
     currentTheme = initTheme();
     // Default terisi akun organizer untuk kenyamanan
-    email = 'organizer@eventify.com';
-    password = 'password123';
   });
 
   function handleTheme() {
@@ -61,7 +59,6 @@
 
   function fillDemo(demoEmail: string, roleName: string) {
     email = demoEmail;
-    password = 'password123';
     selectedDemoRole = roleName;
   }
 </script>
