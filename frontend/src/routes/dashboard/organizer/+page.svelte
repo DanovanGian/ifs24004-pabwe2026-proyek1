@@ -2,7 +2,11 @@
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import { apiRequest } from '../../../helpers/apiHelper.ts';
-  import { Image, Edit3, Trash2, PlusCircle, FileSpreadsheet, Camera, CameraOff, RefreshCw, CheckCircle2, Armchair, Building2, Trophy } from 'lucide-svelte';
+  import { 
+    Image, Edit3, Trash2, PlusCircle, FileSpreadsheet, 
+    Camera, CameraOff, RefreshCw, CheckCircle2, 
+    Armchair, Building2, Trophy, Plus, Tag 
+  } from 'lucide-svelte';
   import { Html5Qrcode } from 'html5-qrcode';
   import Swal from 'sweetalert2';
 
@@ -19,7 +23,7 @@
   let isCameraActive = $state(false);
   let html5QrCode: Html5Qrcode | null = null;
 
-  // Form State
+  // Form State Acara
   let isEditMode = $state(false);
   let editEventId = $state<string | null>(null);
   let title = $state('');
@@ -29,10 +33,33 @@
   let location = $state('');
   let imageUrl = $state('');
   let layoutType = $state<'AUDITORIUM' | 'BALLROOM' | 'STADIUM'>('AUDITORIUM');
-  let ticketName = $state('General Admission');
-  let ticketPrice = $state(100000);
-  let ticketQuota = $state(50);
   let isSubmitting = $state(false);
+
+  // FITUR BARU: BANYAK JENIS TIKET DINAMIS (ARRAY TIKET)
+  let ticketTypesList = $state<Array<{ name: string; price: number; quota: number }>>([
+    { name: 'VIP Pass', price: 250000, quota: 20 },
+    { name: 'Regular Pass', price: 100000, quota: 80 }
+  ]);
+
+  function addTicketTier() {
+    ticketTypesList.push({
+      name: 'Tier Tiket Baru',
+      price: 75000,
+      quota: 50
+    });
+  }
+
+  function removeTicketTier(index: number) {
+    if (ticketTypesList.length <= 1) {
+      Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Acara minimal harus memiliki 1 jenis tiket.' });
+      return;
+    }
+    ticketTypesList.splice(index, 1);
+  }
+
+  function applyPresetImage(url: string) {
+    imageUrl = url;
+  }
 
   async function startCameraScanner() {
     scanResult = null;
@@ -177,6 +204,10 @@
     location = '';
     imageUrl = '';
     layoutType = 'AUDITORIUM';
+    ticketTypesList = [
+      { name: 'VIP Pass', price: 250000, quota: 20 },
+      { name: 'Regular Pass', price: 100000, quota: 80 }
+    ];
     if (categories.length > 0) categoryId = categories[0].id;
   }
 
@@ -211,13 +242,15 @@
             location,
             imageUrl: imageUrl.trim() || null,
             layoutType,
-            ticketTypes: [
-              { name: ticketName, price: Number(ticketPrice), quota: Number(ticketQuota) }
-            ]
+            ticketTypes: ticketTypesList.map(t => ({
+              name: t.name,
+              price: Number(t.price),
+              quota: Number(t.quota)
+            }))
           }),
         });
 
-        Swal.fire({ icon: 'success', title: 'Acara Berhasil Diajukan', text: 'Acara menunggu persetujuan Admin.' });
+        Swal.fire({ icon: 'success', title: 'Acara Berhasil Diajukan', text: 'Acara dengan denah & kategori tiket menunggu persetujuan Admin.' });
       }
 
       resetForm();
@@ -281,7 +314,7 @@
   <div class="flex justify-between items-center">
     <div>
       <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Organizer Dashboard</h1>
-      <p class="text-slate-500 dark:text-slate-400 text-xs mt-1">Kelola denah kursi acara, publikasikan acara, dan scanner tiket webcam.</p>
+      <p class="text-slate-500 dark:text-slate-400 text-xs mt-1">Kelola kategori tiket ganda, denah tempat duduk, dan scanner webcam.</p>
     </div>
 
     <!-- Tab Navigasi -->
@@ -453,6 +486,7 @@
                   <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-4">
                     <span>📅 {new Date(evt.date).toLocaleDateString('id-ID')}</span>
                     <span>📍 {evt.location}</span>
+                    <span>🎟️ {evt.ticketTypes?.length || 0} Jenis Tiket</span>
                   </div>
                 </div>
               </div>
@@ -488,7 +522,7 @@
       {/if}
     </div>
 
-  <!-- TAB 3: FORMULIR ACARA LENGKAP DENGAN PILIHAN DENAH TEMPAT DUDUK -->
+  <!-- TAB 3: FORMULIR ACARA DENGAN 3 PRESET SAMPUL & BANYAK TIKET DINAMIS -->
   {:else if activeTab === 'create'}
     <div class="max-w-3xl mx-auto bg-white dark:bg-[#0F172A] p-8 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-sm">
       <div class="flex justify-between items-center mb-6">
@@ -497,7 +531,7 @@
             {isEditMode ? 'Formulir Edit Acara' : 'Formulir Publikasi Acara Baru'}
           </h3>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Tentukan detail acara dan denah tata letak tempat duduk bagi peserta.
+            Tentukan detail acara, pilih denah kursi, dan tambahkan beberapa kategori tiket.
           </p>
         </div>
         {#if isEditMode}
@@ -507,29 +541,28 @@
         {/if}
       </div>
 
-      <form onsubmit={handleSubmitEvent} class="space-y-5">
+      <form onsubmit={handleSubmitEvent} class="space-y-6">
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Judul Acara</label>
-          <input type="text" bind:value={title} required placeholder="Contoh: Modern Web Summit 2026" class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl text-xs focus:outline-indigo-600 bg-slate-50 dark:bg-slate-800/60" />
+          <label for="event-title" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Judul Acara</label>
+          <input id="event-title" type="text" bind:value={title} required placeholder="Contoh: Modern Web Summit 2026" class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl text-xs focus:outline-indigo-600 bg-slate-50 dark:bg-slate-800/60" />
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Kategori Acara</label>
-          <select bind:value={categoryId} class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl text-xs focus:outline-indigo-600 bg-white dark:bg-slate-800">
+          <label for="event-category" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Kategori Acara</label>
+          <select id="event-category" bind:value={categoryId} class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl text-xs focus:outline-indigo-600 bg-white dark:bg-slate-800">
             {#each categories as cat}
               <option value={cat.id}>{cat.name}</option>
             {/each}
           </select>
         </div>
 
-        <!-- FITUR BARU: PILIHAN DENAH TEMPAT DUDUK 3 MODEL -->
+        <!-- PILIHAN DENAH TEMPAT DUDUK 3 MODEL -->
         <div class="p-4 bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl space-y-3">
           <label class="block text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase">
             Pilih Model Denah Kursi Acara (Seating Layout)
           </label>
           
           <div class="grid grid-cols-3 gap-3">
-            <!-- 1. Auditorium -->
             <button 
               type="button"
               onclick={() => layoutType = 'AUDITORIUM'}
@@ -539,7 +572,6 @@
               <div class="text-[10px] text-slate-400 mt-0.5">Teater berundak, Baris VIP & Reguler depan panggung.</div>
             </button>
 
-            <!-- 2. Balai Pertemuan -->
             <button 
               type="button"
               onclick={() => layoutType = 'BALLROOM'}
@@ -549,7 +581,6 @@
               <div class="text-[10px] text-slate-400 mt-0.5">Grand Ballroom dengan meja bundar VIP & Konferensi.</div>
             </button>
 
-            <!-- 3. Tenis Indoor Senayan -->
             <button 
               type="button"
               onclick={() => layoutType = 'STADIUM'}
@@ -561,52 +592,112 @@
           </div>
         </div>
 
-        <!-- Input Sampul Gambar -->
+        <!-- INPUT FOTO SAMPUL LENGKAP DENGAN 3 PRESET & LIVE PREVIEW -->
         <div class="p-4 bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl space-y-3">
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase flex items-center gap-1.5">
-            <Image class="w-4 h-4 text-indigo-500" />
-            URL Foto Sampul Acara (Cover Banner)
-          </label>
+          <div class="flex justify-between items-center">
+            <label for="event-image-url" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase flex items-center gap-1.5">
+              <Image class="w-4 h-4 text-indigo-500" />
+              URL Foto Sampul Acara (Cover Banner)
+            </label>
+            <span class="text-[10px] text-slate-400">Format: JPG, PNG, WebP URL</span>
+          </div>
+
           <input 
+            id="event-image-url"
             type="url" 
             bind:value={imageUrl} 
             placeholder="https://images.unsplash.com/photo-..." 
             class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl text-xs bg-white dark:bg-slate-800 focus:outline-indigo-600" 
           />
+
+          <!-- 3 PILIHAN CEPAT PRESET SAMPUL -->
+          <div class="flex items-center gap-2 pt-1 text-[11px] text-slate-500">
+            <span class="font-semibold text-slate-400">Pilihan Cepat Sampul:</span>
+            <button type="button" onclick={() => applyPresetImage('https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1000')} class="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-bold hover:border-indigo-500 hover:text-indigo-600 cursor-pointer">Teknologi & AI</button>
+            <button type="button" onclick={() => applyPresetImage('https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=1000')} class="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-bold hover:border-indigo-500 hover:text-indigo-600 cursor-pointer">Konser Musik</button>
+            <button type="button" onclick={() => applyPresetImage('https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=1000')} class="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-bold hover:border-indigo-500 hover:text-indigo-600 cursor-pointer">Bisnis & Seminar</button>
+          </div>
+
+          <!-- LIVE PREVIEW SAMPUL -->
+          {#if imageUrl}
+            <div class="mt-3 relative h-40 rounded-xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-xs">
+              <img src={imageUrl} alt="Pratinjau Sampul" class="w-full h-full object-cover" />
+              <div class="absolute bottom-2 left-2 px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-md text-[10px] text-white font-bold">
+                ✓ Pratinjau Sampul Aktif
+              </div>
+            </div>
+          {/if}
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Tanggal & Waktu</label>
-            <input type="datetime-local" bind:value={date} required class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl text-xs focus:outline-indigo-600 bg-slate-50 dark:bg-slate-800/60" />
+            <label for="event-date" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Tanggal & Waktu</label>
+            <input id="event-date" type="datetime-local" bind:value={date} required class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl text-xs focus:outline-indigo-600 bg-slate-50 dark:bg-slate-800/60" />
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Lokasi Venue</label>
-            <input type="text" bind:value={location} required placeholder="Auditorium Delcom / Tenis Indoor" class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl text-xs focus:outline-indigo-600 bg-slate-50 dark:bg-slate-800/60" />
+            <label for="event-location" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Lokasi Venue</label>
+            <input id="event-location" type="text" bind:value={location} required placeholder="Auditorium Delcom / Tenis Indoor" class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl text-xs focus:outline-indigo-600 bg-slate-50 dark:bg-slate-800/60" />
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Deskripsi Lengkap Acara</label>
-          <textarea bind:value={description} rows="3" required placeholder="Jelaskan pembicara, agenda, dan manfaat..." class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl text-xs focus:outline-indigo-600 bg-slate-50 dark:bg-slate-800/60"></textarea>
+          <label for="event-desc" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Deskripsi Lengkap Acara</label>
+          <textarea id="event-desc" bind:value={description} rows="3" required placeholder="Jelaskan pembicara, agenda, dan manfaat..." class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl text-xs focus:outline-indigo-600 bg-slate-50 dark:bg-slate-800/60"></textarea>
         </div>
 
+        <!-- FITUR UTAMA: KELOLA BANYAK KATEGORI TIKET DINAMIS (VIP, REGULER, FESTIVAL, DLL) -->
         {#if !isEditMode}
-          <div class="p-4 bg-slate-50 dark:bg-white/[0.02] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-            <span class="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 uppercase">Pengaturan Tiket Utama</span>
-            <div class="grid grid-cols-3 gap-3">
+          <div class="p-5 bg-slate-50 dark:bg-white/[0.02] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-4">
+            <div class="flex justify-between items-center">
               <div>
-                <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">Nama Tiket</label>
-                <input type="text" bind:value={ticketName} required class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs" />
+                <span class="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 uppercase flex items-center gap-1.5">
+                  <Tag class="w-4 h-4" />
+                  Kategori Tiket Acara ({ticketTypesList.length})
+                </span>
+                <p class="text-[11px] text-slate-400">Atur harga & kuota untuk setiap zona tempat duduk.</p>
               </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">Harga (Rp)</label>
-                <input type="number" bind:value={ticketPrice} min="0" required class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs" />
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">Kuota Tiket</label>
-                <input type="number" bind:value={ticketQuota} min="1" required class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs" />
-              </div>
+
+              <!-- Tombol Tambah Tier Tiket Baru -->
+              <button 
+                type="button" 
+                onclick={addTicketTier}
+                class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs">
+                <Plus class="w-3.5 h-3.5" />
+                <span>+ Tambah Kategori Tiket</span>
+              </button>
+            </div>
+
+            <!-- List Tiket -->
+            <div class="space-y-3">
+              {#each ticketTypesList as tkt, idx}
+                <div class="p-4 bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-white/10 flex items-center gap-3">
+                  <span class="text-xs font-black text-indigo-500 w-5">#{idx + 1}</span>
+
+                  <div class="flex-1">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nama Tiket (cth: VIP / Reguler / Tribun)</label>
+                    <input type="text" bind:value={tkt.name} required class="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold bg-slate-50 dark:bg-slate-900" />
+                  </div>
+
+                  <div class="w-36">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Harga (Rp)</label>
+                    <input type="number" bind:value={tkt.price} min="0" required class="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold bg-slate-50 dark:bg-slate-900" />
+                  </div>
+
+                  <div class="w-24">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Kuota</label>
+                    <input type="number" bind:value={tkt.quota} min="1" required class="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold bg-slate-50 dark:bg-slate-900" />
+                  </div>
+
+                  <!-- Tombol Hapus Tier -->
+                  <button 
+                    type="button" 
+                    onclick={() => removeTicketTier(idx)}
+                    title="Hapus Tier Tiket Ini"
+                    class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded-lg transition mt-4 cursor-pointer">
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
+              {/each}
             </div>
           </div>
         {/if}

@@ -4,7 +4,7 @@
   import { goto } from '$app/navigation';
   import { apiRequest } from '../../../helpers/apiHelper.ts';
   import { formatRupiah } from '../../../helpers/toolsHelper.ts';
-  import { Calendar, MapPin, Sparkles, Armchair, Building2, Trophy, Eye } from 'lucide-svelte';
+  import { Calendar, MapPin, Sparkles, Armchair, Building2, Trophy, Tag } from 'lucide-svelte';
   import Swal from 'sweetalert2';
 
   let eventId = $derived(page.params.id);
@@ -76,8 +76,13 @@
     event?.ticketTypes?.find((t: any) => t.id === selectedTicketId)
   );
 
+  // Deteksi Otomatis Zona Kursi yang Harus Menyala
   let isVipSelected = $derived(
     selectedTicket?.name.toLowerCase().includes('vip')
+  );
+
+  let isFestivalSelected = $derived(
+    selectedTicket?.name.toLowerCase().includes('festival') || selectedTicket?.name.toLowerCase().includes('standing')
   );
 </script>
 
@@ -114,12 +119,10 @@
     <!-- Grid Detail & Checkout -->
     <div class="grid grid-cols-12 gap-8">
       
-      <!-- KOLOM KIRI: DESKRIPSI & DENAH TEMPAT DUDUK INTERAKTIF (7 Kolom) -->
+      <!-- KOLOM KIRI: DENAH TEMPAT DUDUK INTERAKTIF & DESKRIPSI (7 Kolom) -->
       <div class="col-span-7 space-y-6">
         
-        <!-- ==============================================
-             DENAH TEMPAT DUDUK INTERAKTIF (SEATING MAP)
-             ============================================== -->
+        <!-- SEATING MAP -->
         <div class="bg-white dark:bg-[#0F172A] p-7 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-xs space-y-5">
           <div class="flex justify-between items-center">
             <div>
@@ -130,7 +133,7 @@
                 </span>
               </h3>
               <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Pilih jenis tiket di sebelah kanan untuk melihat zona kursi Anda di denah.
+                Zona kursi akan otomatis menyala mengikuti jenis tiket yang Anda pilih.
               </p>
             </div>
           </div>
@@ -212,33 +215,32 @@
             <!-- DENAH 3: MODEL TENIS INDOOR SENAYAN (STADION ARENA & TRIBUN) -->
             {:else}
               <div class="space-y-3 pt-2">
-                <!-- Tribun Barat & Timur Mengelilingi -->
                 <div class="grid grid-cols-3 gap-2">
-                  <div class="p-2.5 rounded-xl border text-center {!isVipSelected ? 'border-indigo-400 bg-indigo-500/20 text-indigo-300' : 'border-white/10 text-slate-500'}">
+                  <div class="p-2.5 rounded-xl border text-center {!isVipSelected && !isFestivalSelected ? 'border-indigo-400 bg-indigo-500/30 text-indigo-300 ring-2 ring-indigo-400/50' : 'border-white/10 text-slate-500'}">
                     <span class="text-[10px] font-bold block">TRIBUN BARAT</span>
                     <span class="text-[8px]">Seating Area</span>
                   </div>
 
-                  <!-- Arena / Courtside VIP Tengah -->
-                  <div class="p-3 rounded-xl border text-center transition-all duration-300 {isVipSelected ? 'border-amber-400 bg-amber-500/30 text-amber-300 ring-2 ring-amber-400/50' : 'border-white/10 text-slate-500'}">
+                  <!-- Courtside / Festival Tengah -->
+                  <div class="p-3 rounded-xl border text-center transition-all duration-300 {isVipSelected || isFestivalSelected ? 'border-amber-400 bg-amber-500/40 text-amber-300 ring-2 ring-amber-400/50 scale-105' : 'border-white/10 text-slate-500'}">
                     <span class="text-[10px] font-black block">👑 FESTIVAL / COURTSIDE</span>
                     <span class="text-[8px]">Area Lapangan Tengah</span>
                   </div>
 
-                  <div class="p-2.5 rounded-xl border text-center {!isVipSelected ? 'border-indigo-400 bg-indigo-500/20 text-indigo-300' : 'border-white/10 text-slate-500'}">
+                  <div class="p-2.5 rounded-xl border text-center {!isVipSelected && !isFestivalSelected ? 'border-indigo-400 bg-indigo-500/30 text-indigo-300 ring-2 ring-indigo-400/50' : 'border-white/10 text-slate-500'}">
                     <span class="text-[10px] font-bold block">TRIBUN TIMUR</span>
                     <span class="text-[8px]">Seating Area</span>
                   </div>
                 </div>
 
-                <div class="p-2.5 rounded-xl border text-center {!isVipSelected ? 'border-indigo-400 bg-indigo-500/20 text-indigo-300' : 'border-white/10 text-slate-500'}">
+                <div class="p-2.5 rounded-xl border text-center {!isVipSelected && !isFestivalSelected ? 'border-indigo-400 bg-indigo-500/30 text-indigo-300 ring-2 ring-indigo-400/50' : 'border-white/10 text-slate-500'}">
                   <span class="text-[10px] font-bold">TRIBUN UTARA & ATAS (REGULER STADIUM SEATS)</span>
                 </div>
               </div>
             {/if}
 
             <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1">
-              <span>* Zona yang menyala adalah area tempat duduk tiket pilihan Anda</span>
+              <span>* Zona yang menyala adalah area kursi untuk tiket terpilih</span>
               <span class="font-bold text-amber-400">Nomor Kursi Resmi Dicetak pada Tiket</span>
             </div>
           </div>
@@ -257,29 +259,40 @@
         </div>
       </div>
 
-      <!-- KOLOM KANAN: PANEL CHECKOUT & PILIH TIKET (5 Kolom) -->
+      <!-- KOLOM KANAN: PILIHAN SELURUH TIKET DINAMIS & CHECKOUT (5 Kolom) -->
       <div class="col-span-5">
         <div class="bg-white dark:bg-[#0F172A] p-6 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs space-y-4 sticky top-24">
-          <h3 class="font-bold text-base text-slate-900 dark:text-white pb-2 border-b border-slate-100 dark:border-white/[0.06]">
-            Pilih Kategori Tiket
-          </h3>
+          <div>
+            <h3 class="font-bold text-base text-slate-900 dark:text-white">
+              Pilih Kategori Tiket
+            </h3>
+            <p class="text-[11px] text-slate-400">Tersedia {event.ticketTypes?.length || 0} kategori tiket untuk acara ini.</p>
+          </div>
           
-          {#each event.ticketTypes as tkt}
-            <label class="flex justify-between items-center p-3.5 border rounded-2xl cursor-pointer transition {selectedTicketId === tkt.id ? 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 ring-1 ring-indigo-500' : 'border-slate-200 dark:border-white/[0.08] hover:border-slate-300'}">
-              <div class="flex items-center gap-2.5">
-                <input type="radio" bind:group={selectedTicketId} value={tkt.id} class="text-indigo-600" />
-                <div>
-                  <div class="font-bold text-xs text-slate-800 dark:text-slate-200">{tkt.name}</div>
-                  <div class="text-[10px] text-slate-400">Sisa: {tkt.availableQuota} tiket</div>
+          <!-- DAFTAR SEMUA TIKET DINAMIS YANG DIBUAT ORGANIZER -->
+          <div class="space-y-2.5">
+            {#each event.ticketTypes as tkt}
+              <label class="flex justify-between items-center p-3.5 border rounded-2xl cursor-pointer transition {selectedTicketId === tkt.id ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/40 ring-2 ring-indigo-500/50' : 'border-slate-200 dark:border-white/[0.08] hover:border-slate-300'}">
+                <div class="flex items-center gap-3">
+                  <input type="radio" bind:group={selectedTicketId} value={tkt.id} class="text-indigo-600" />
+                  <div>
+                    <div class="font-extrabold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span>{tkt.name}</span>
+                      {#if tkt.name.toLowerCase().includes('vip')}
+                        <span class="px-1.5 py-0.2 bg-amber-400/20 text-amber-500 text-[9px] rounded font-black">VIP</span>
+                      {/if}
+                    </div>
+                    <div class="text-[10px] text-slate-400 mt-0.5">Sisa Kuota: <strong>{tkt.availableQuota}</strong> tiket</div>
+                  </div>
                 </div>
-              </div>
-              <div class="font-extrabold text-xs text-indigo-600 dark:text-indigo-400">{formatRupiah(tkt.price)}</div>
-            </label>
-          {/each}
+                <div class="font-black text-sm text-indigo-600 dark:text-indigo-400">{formatRupiah(tkt.price)}</div>
+              </label>
+            {/each}
+          </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Jumlah Tiket</label>
-            <input type="number" bind:value={quantity} min="1" max={selectedTicket?.availableQuota || 1} class="w-full px-3 py-2 border border-slate-200 dark:border-white/[0.1] rounded-lg text-sm bg-slate-50 dark:bg-slate-800" />
+            <label for="ticket-qty-input" class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Jumlah Tiket</label>
+            <input id="ticket-qty-input" type="number" bind:value={quantity} min="1" max={selectedTicket?.availableQuota || 1} class="w-full px-3 py-2 border border-slate-200 dark:border-white/[0.1] rounded-lg text-sm bg-slate-50 dark:bg-slate-800" />
           </div>
 
           <div class="pt-3 border-t border-slate-100 dark:border-white/[0.06] flex justify-between font-bold">
