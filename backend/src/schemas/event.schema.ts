@@ -7,6 +7,7 @@ export const createEventSchema = z.object({
   date: z.string().min(1, 'Tanggal acara harus ditentukan'),
   location: z.string().min(3, 'Lokasi acara harus diisi'),
   imageUrl: z.string().optional().nullable(),
+  layoutType: z.enum(['AUDITORIUM', 'BALLROOM', 'STADIUM']).default('AUDITORIUM'),
   ticketTypes: z.array(
     z.object({
       name: z.string().min(2, 'Nama tiket minimal 2 karakter'),
@@ -23,6 +24,7 @@ export const updateEventSchema = z.object({
   date: z.string().min(1, 'Tanggal acara harus ditentukan'),
   location: z.string().min(3, 'Lokasi acara harus diisi'),
   imageUrl: z.string().optional().nullable(),
+  layoutType: z.enum(['AUDITORIUM', 'BALLROOM', 'STADIUM']).optional(),
 });
 
 export const updateEventStatusSchema = z.object({

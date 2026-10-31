@@ -34,7 +34,8 @@ model Event {
   categoryId    String
   date          DateTime
   location      String
-  imageUrl      String?        // Kolom Foto Sampul Acara
+  imageUrl      String?
+  layoutType    String         @default("AUDITORIUM") // AUDITORIUM, BALLROOM, STADIUM
   status        String         @default("PENDING_APPROVAL")
   createdAt     DateTime       @default(now())
 
@@ -81,6 +82,7 @@ model Ticket {
   eventId        String
   ticketTypeId   String
   qrToken        String       @unique
+  seatNumber     String?      // Nomor Kursi Resmi Peserta
   isUsed         Boolean      @default(false)
   checkedInAt    DateTime?
   createdAt      DateTime     @default(now())

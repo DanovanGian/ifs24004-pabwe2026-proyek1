@@ -30,7 +30,6 @@ export class EventService {
     return event;
   }
 
-  // AMBIL DATA PESERTA UNTUK EKSPOR CSV / LAPORAN
   static async getEventParticipants(eventId: string, userId: string, userRole: string) {
     const event = await prisma.event.findUnique({ where: { id: eventId } });
     if (!event) throw new Error('Acara tidak ditemukan');
@@ -39,7 +38,6 @@ export class EventService {
       throw new Error('Anda tidak memiliki izin mengakses data peserta acara ini');
     }
 
-    // Ambil semua tiket yang diterbitkan untuk acara ini beserta data user & tiket
     const tickets = await prisma.ticket.findMany({
       where: { eventId },
       include: {
@@ -57,6 +55,7 @@ export class EventService {
         participantName: t.participant.name,
         participantEmail: t.participant.email,
         ticketType: t.ticketType.name,
+        seatNumber: t.seatNumber || 'Festival Standing',
         pricePaid: t.ticketType.price,
         isUsed: t.isUsed,
         checkedInAt: t.checkedInAt ? new Date(t.checkedInAt).toLocaleString('id-ID') : 'Belum Hadir',
@@ -75,6 +74,7 @@ export class EventService {
         date: new Date(data.date),
         location: data.location,
         imageUrl: data.imageUrl || null,
+        layoutType: data.layoutType || 'AUDITORIUM',
         status: 'PENDING_APPROVAL',
         ticketTypes: {
           create: data.ticketTypes.map((t: any) => ({
@@ -106,6 +106,7 @@ export class EventService {
         date: new Date(data.date),
         location: data.location,
         imageUrl: data.imageUrl || null,
+        layoutType: data.layoutType || event.layoutType,
       },
       include: { ticketTypes: true },
     });

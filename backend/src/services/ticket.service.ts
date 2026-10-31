@@ -28,7 +28,7 @@ export class TicketService {
   static async simulatePayment(registrationId: string, userId: string) {
     const reg = await prisma.registration.findUnique({
       where: { id: registrationId },
-      include: { ticketType: true },
+      include: { ticketType: true, event: true },
     });
 
     if (!reg) throw new Error('Registrasi tidak ditemukan');
@@ -39,7 +39,6 @@ export class TicketService {
       throw new Error('Kuota tiket sudah habis');
     }
 
-    // Transaksi Database: Potong Kuota, Update Status & Buat Tiket
     return await prisma.$transaction(async (tx) => {
       await tx.ticketType.update({
         where: { id: reg.ticketTypeId },
@@ -52,8 +51,24 @@ export class TicketService {
       });
 
       const tickets: any[] = [];
+      const layout = reg.event.layoutType || 'AUDITORIUM';
+      const isVip = reg.ticketType.name.toLowerCase().includes('vip');
+
       for (let i = 0; i < reg.quantity; i++) {
         const qrToken = `tkn_${crypto.randomUUID()}`;
+        
+        // Penomoran Kursi Sesuai Denah Venue
+        let seatNumber = '';
+        const randomNum = Math.floor(Math.random() * 20) + 1;
+        if (layout === 'AUDITORIUM') {
+          seatNumber = isVip ? `VIP Baris A-0${randomNum}` : `Reguler Baris C-${randomNum}`;
+        } else if (layout === 'BALLROOM') {
+          seatNumber = isVip ? `Meja Bundar VIP ${Math.floor(Math.random() * 4) + 1}` : `Meja Bundar Reguler ${Math.floor(Math.random() * 8) + 5}`;
+        } else {
+          // STADIUM (Tennis Indoor Senayan)
+          seatNumber = isVip ? `Courtside VIP - C${randomNum}` : `Tribun Barat - Baris ${randomNum}`;
+        }
+
         const ticket = await tx.ticket.create({
           data: {
             registrationId: reg.id,
@@ -61,6 +76,7 @@ export class TicketService {
             eventId: reg.eventId,
             ticketTypeId: reg.ticketTypeId,
             qrToken,
+            seatNumber,
           },
         });
         const qrDataUrl = await QRCode.toDataURL(qrToken);
@@ -85,6 +101,7 @@ export class TicketService {
         eventTitle: t.event.title,
         eventDate: t.event.date,
         eventLocation: t.event.location,
+        layoutType: t.event.layoutType,
         ticketTypeName: t.ticketType.name,
       }))
     );
@@ -109,6 +126,7 @@ export class TicketService {
       ticketId: updated.id,
       participantName: ticket.participant.name,
       eventTitle: ticket.event.title,
+      seatNumber: ticket.seatNumber,
       checkedInAt: updated.checkedInAt,
     };
   }

@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import { apiRequest } from '../../../helpers/apiHelper.ts';
-  import { Image, Edit3, Trash2, PlusCircle, FileSpreadsheet, Camera, CameraOff, RefreshCw, CheckCircle2 } from 'lucide-svelte';
+  import { Image, Edit3, Trash2, PlusCircle, FileSpreadsheet, Camera, CameraOff, RefreshCw, CheckCircle2, Armchair, Building2, Trophy } from 'lucide-svelte';
   import { Html5Qrcode } from 'html5-qrcode';
   import Swal from 'sweetalert2';
 
@@ -28,14 +28,12 @@
   let date = $state('');
   let location = $state('');
   let imageUrl = $state('');
+  let layoutType = $state<'AUDITORIUM' | 'BALLROOM' | 'STADIUM'>('AUDITORIUM');
   let ticketName = $state('General Admission');
   let ticketPrice = $state(100000);
   let ticketQuota = $state(50);
   let isSubmitting = $state(false);
 
-  // ==========================================
-  // LOGIKA SCANNER KAMERA WEBCAM LANGSUNG
-  // ==========================================
   async function startCameraScanner() {
     scanResult = null;
     scanError = '';
@@ -46,28 +44,21 @@
       }
 
       isCameraActive = true;
-
       await html5QrCode.start(
-        { facingMode: 'environment' }, // Mengutamakan kamera depan/webcam
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-        },
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
         async (decodedText) => {
-          // Ketika QR Code terbaca oleh kamera
           await processCheckIn(decodedText);
-          stopCameraScanner(); // Jeda sementara kamera setelah berhasil scan
+          stopCameraScanner();
         },
-        () => {
-          // Frame scanner sedang membaca (silent)
-        }
+        () => {}
       );
-    } catch (err: any) {
+    } catch {
       isCameraActive = false;
       Swal.fire({
         icon: 'error',
-        title: 'Kamera Gagal Dibuka',
-        text: 'Pastikan Anda memberikan izin akses kamera (Camera Permission) pada browser.',
+        title: 'Kamera Gagal',
+        text: 'Pastikan Anda memberikan izin akses kamera pada browser.',
       });
     }
   }
@@ -83,7 +74,6 @@
     isCameraActive = false;
   }
 
-  // Proses Validasi Check-In ke Backend
   async function processCheckIn(token: string) {
     scanResult = null;
     scanError = '';
@@ -97,13 +87,12 @@
       scanResult = res.data;
       qrTokenInput = '';
     } catch (err: any) {
-      scanError = err.message || 'Check-in gagal: Tiket tidak valid atau sudah digunakan.';
+      scanError = err.message || 'Check-in gagal.';
     } finally {
       isScanning = false;
     }
   }
 
-  // Check-In Manual via Form Input
   async function handleManualCheckIn(e: SubmitEvent) {
     e.preventDefault();
     if (qrTokenInput.trim()) {
@@ -111,9 +100,6 @@
     }
   }
 
-  // ==========================================
-  // MANAJEMEN ACARA
-  // ==========================================
   async function loadMyEvents() {
     isLoadingEvents = true;
     try {
@@ -140,17 +126,17 @@
         return;
       }
 
-      const headers = ['No', 'ID Tiket', 'Nama Peserta', 'Email', 'Kategori Tiket', 'Harga Tiket (Rp)', 'Status Kehadiran', 'Waktu Check-in', 'Tanggal Pesan'];
+      const headers = ['No', 'ID Tiket', 'Nama Peserta', 'Email', 'Kategori Tiket', 'Nomor Kursi', 'Harga (Rp)', 'Status Kehadiran', 'Waktu Check-in'];
       const rows = participants.map((p: any, index: number) => [
         index + 1,
         `"${p.ticketId}"`,
         `"${p.participantName}"`,
         `"${p.participantEmail}"`,
         `"${p.ticketType}"`,
+        `"${p.seatNumber}"`,
         p.pricePaid,
         p.isUsed ? 'Sudah Check-In' : 'Belum Hadir',
         `"${p.checkedInAt}"`,
-        `"${p.registeredAt}"`,
       ]);
 
       const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r: any) => r.join(','))].join('\n');
@@ -178,6 +164,7 @@
     date = new Date(event.date).toISOString().slice(0, 16);
     location = event.location;
     imageUrl = event.imageUrl || '';
+    layoutType = event.layoutType || 'AUDITORIUM';
     activeTab = 'create';
   }
 
@@ -189,6 +176,7 @@
     date = '';
     location = '';
     imageUrl = '';
+    layoutType = 'AUDITORIUM';
     if (categories.length > 0) categoryId = categories[0].id;
   }
 
@@ -207,10 +195,11 @@
             date,
             location,
             imageUrl: imageUrl.trim() || null,
+            layoutType,
           }),
         });
 
-        Swal.fire({ icon: 'success', title: 'Perubahan Disimpan', text: 'Detail acara berhasil diperbarui!', timer: 1500, showConfirmButton: false });
+        Swal.fire({ icon: 'success', title: 'Perubahan Disimpan', text: 'Detail acara & denah berhasil diperbarui!', timer: 1500, showConfirmButton: false });
       } else {
         await apiRequest('/events', {
           method: 'POST',
@@ -221,6 +210,7 @@
             date,
             location,
             imageUrl: imageUrl.trim() || null,
+            layoutType,
             ticketTypes: [
               { name: ticketName, price: Number(ticketPrice), quota: Number(ticketQuota) }
             ]
@@ -291,7 +281,7 @@
   <div class="flex justify-between items-center">
     <div>
       <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Organizer Dashboard</h1>
-      <p class="text-slate-500 dark:text-slate-400 text-xs mt-1">Scanner QR Kamera Webcam langsung, kelola acara, dan ekspor laporan peserta.</p>
+      <p class="text-slate-500 dark:text-slate-400 text-xs mt-1">Kelola denah kursi acara, publikasikan acara, dan scanner tiket webcam.</p>
     </div>
 
     <!-- Tab Navigasi -->
@@ -317,10 +307,9 @@
     </div>
   </div>
 
-  <!-- TAB 1: SCANNER CHECK-IN DENGAN KAMERA WEBCAM -->
+  <!-- TAB 1: SCANNER KAMERA WEBCAM -->
   {#if activeTab === 'scanner'}
     <div class="grid grid-cols-2 gap-8">
-      <!-- Panel Pemindai (Kamera / Manual) -->
       <div class="bg-white dark:bg-[#0F172A] p-8 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-xs space-y-5">
         <div class="flex justify-between items-center">
           <div>
@@ -328,7 +317,6 @@
             <p class="text-slate-500 dark:text-slate-400 text-xs">Pindai QR Code via webcam atau ketik token tiket manual.</p>
           </div>
 
-          <!-- Tombol Saklar Kamera -->
           {#if isCameraActive}
             <button 
               type="button"
@@ -348,23 +336,20 @@
           {/if}
         </div>
 
-        <!-- Viewport Kamera Scanner -->
         <div class="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 bg-slate-950 min-h-[260px] flex items-center justify-center">
           <div id="qr-reader" class="w-full"></div>
-
           {#if !isCameraActive}
             <div class="text-center p-8 space-y-3">
               <div class="w-12 h-12 rounded-2xl bg-slate-800 text-slate-400 mx-auto flex items-center justify-center">
                 <Camera class="w-6 h-6" />
               </div>
               <p class="text-xs text-slate-400 max-w-xs">
-                Kamera nonaktif. Klik tombol <strong>"Aktifkan Kamera"</strong> di atas untuk memindai otomatis via webcam laptop.
+                Kamera nonaktif. Klik tombol <strong>"Aktifkan Kamera"</strong> untuk memindai otomatis.
               </p>
             </div>
           {/if}
         </div>
 
-        <!-- Form Cadangan (Input Token Manual) -->
         <div class="pt-2 border-t border-slate-100 dark:border-white/[0.06]">
           <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Atau Masukkan Token Manual:</span>
           <form onsubmit={handleManualCheckIn} class="flex gap-2">
@@ -384,7 +369,6 @@
         </div>
       </div>
 
-      <!-- Panel Feedback Status Validasi -->
       <div class="flex flex-col justify-center">
         {#if scanResult}
           <div class="bg-emerald-50 dark:bg-emerald-950/50 border-2 border-emerald-300 dark:border-emerald-700 p-8 rounded-3xl space-y-4 shadow-sm animate-in fade-in duration-300">
@@ -396,10 +380,12 @@
             <div>
               <h2 class="text-2xl font-black text-emerald-950 dark:text-white leading-tight">{scanResult.eventTitle}</h2>
               <div class="text-emerald-800 dark:text-emerald-300 text-sm mt-1">Peserta: <strong>{scanResult.participantName}</strong></div>
+              {#if scanResult.seatNumber}
+                <div class="text-xs font-bold text-indigo-600 dark:text-indigo-400 mt-1">🪑 Lokasi Kursi: {scanResult.seatNumber}</div>
+              {/if}
               <div class="text-xs text-emerald-600 dark:text-emerald-400 mt-1">Waktu: {new Date(scanResult.checkedInAt).toLocaleTimeString('id-ID')} WIB</div>
             </div>
 
-            <!-- Tombol Lanjut Scan Antrean Berikutnya -->
             <button 
               type="button"
               onclick={startCameraScanner}
@@ -459,6 +445,9 @@
                       {evt.status}
                     </span>
                     <span class="text-xs text-slate-400">{evt.category?.name}</span>
+                    <span class="text-[10px] font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-md">
+                      Denah: {evt.layoutType === 'STADIUM' ? 'Stadion Senayan' : evt.layoutType === 'BALLROOM' ? 'Balai Pertemuan' : 'Auditorium'}
+                    </span>
                   </div>
                   <h4 class="font-extrabold text-base text-slate-900 dark:text-white">{evt.title}</h4>
                   <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-4">
@@ -499,7 +488,7 @@
       {/if}
     </div>
 
-  <!-- TAB 3: FORMULIR ACARA -->
+  <!-- TAB 3: FORMULIR ACARA LENGKAP DENGAN PILIHAN DENAH TEMPAT DUDUK -->
   {:else if activeTab === 'create'}
     <div class="max-w-3xl mx-auto bg-white dark:bg-[#0F172A] p-8 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-sm">
       <div class="flex justify-between items-center mb-6">
@@ -508,7 +497,7 @@
             {isEditMode ? 'Formulir Edit Acara' : 'Formulir Publikasi Acara Baru'}
           </h3>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            {isEditMode ? 'Perbarui informasi dan tautan sampul acara.' : 'Acara akan ditinjau Admin sebelum tayang di katalog publik.'}
+            Tentukan detail acara dan denah tata letak tempat duduk bagi peserta.
           </p>
         </div>
         {#if isEditMode}
@@ -533,9 +522,49 @@
           </select>
         </div>
 
+        <!-- FITUR BARU: PILIHAN DENAH TEMPAT DUDUK 3 MODEL -->
         <div class="p-4 bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl space-y-3">
-          <label class="block text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase flex items-center gap-1.5">
-            <Image class="w-4 h-4" />
+          <label class="block text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase">
+            Pilih Model Denah Kursi Acara (Seating Layout)
+          </label>
+          
+          <div class="grid grid-cols-3 gap-3">
+            <!-- 1. Auditorium -->
+            <button 
+              type="button"
+              onclick={() => layoutType = 'AUDITORIUM'}
+              class="p-3.5 rounded-2xl border text-left transition cursor-pointer {layoutType === 'AUDITORIUM' ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/40 ring-1 ring-indigo-500' : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 hover:border-slate-300'}">
+              <Armchair class="w-5 h-5 text-indigo-600 dark:text-indigo-400 mb-2" />
+              <div class="font-extrabold text-xs text-slate-900 dark:text-white">Auditorium</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Teater berundak, Baris VIP & Reguler depan panggung.</div>
+            </button>
+
+            <!-- 2. Balai Pertemuan -->
+            <button 
+              type="button"
+              onclick={() => layoutType = 'BALLROOM'}
+              class="p-3.5 rounded-2xl border text-left transition cursor-pointer {layoutType === 'BALLROOM' ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/40 ring-1 ring-indigo-500' : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 hover:border-slate-300'}">
+              <Building2 class="w-5 h-5 text-indigo-600 dark:text-indigo-400 mb-2" />
+              <div class="font-extrabold text-xs text-slate-900 dark:text-white">Balai Pertemuan</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Grand Ballroom dengan meja bundar VIP & Konferensi.</div>
+            </button>
+
+            <!-- 3. Tenis Indoor Senayan -->
+            <button 
+              type="button"
+              onclick={() => layoutType = 'STADIUM'}
+              class="p-3.5 rounded-2xl border text-left transition cursor-pointer {layoutType === 'STADIUM' ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/40 ring-1 ring-indigo-500' : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 hover:border-slate-300'}">
+              <Trophy class="w-5 h-5 text-indigo-600 dark:text-indigo-400 mb-2" />
+              <div class="font-extrabold text-xs text-slate-900 dark:text-white">Tenis Indoor Senayan</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Stadion Arena: Lapangan tengah & Tribun sekeliling.</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Input Sampul Gambar -->
+        <div class="p-4 bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl space-y-3">
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase flex items-center gap-1.5">
+            <Image class="w-4 h-4 text-indigo-500" />
             URL Foto Sampul Acara (Cover Banner)
           </label>
           <input 
@@ -544,11 +573,6 @@
             placeholder="https://images.unsplash.com/photo-..." 
             class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl text-xs bg-white dark:bg-slate-800 focus:outline-indigo-600" 
           />
-          {#if imageUrl}
-            <div class="mt-2 relative h-36 rounded-xl overflow-hidden border border-slate-200 dark:border-white/10">
-              <img src={imageUrl} alt="Pratinjau Sampul" class="w-full h-full object-cover" />
-            </div>
-          {/if}
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -558,7 +582,7 @@
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Lokasi Venue</label>
-            <input type="text" bind:value={location} required placeholder="Jakarta Convention Center" class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl text-xs focus:outline-indigo-600 bg-slate-50 dark:bg-slate-800/60" />
+            <input type="text" bind:value={location} required placeholder="Auditorium Delcom / Tenis Indoor" class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl text-xs focus:outline-indigo-600 bg-slate-50 dark:bg-slate-800/60" />
           </div>
         </div>
 

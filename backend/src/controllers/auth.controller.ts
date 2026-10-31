@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service.ts';
+import { prisma } from '../data/db.ts';
 
 export class AuthController {
   static async register(req: Request, res: Response) {
@@ -19,6 +20,46 @@ export class AuthController {
       res.json({ status: 'success', data: result });
     } catch (err: any) {
       res.status(401).json({ status: 'error', message: err.message });
+    }
+  }
+
+  // KHUSUS ADMIN: Ambil Semua Pengguna
+  static async getAllUsers(req: Request, res: Response) {
+    try {
+      const users = await prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          _count: { select: { events: true, registrations: true } }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+      res.json({ status: 'success', data: users });
+    } catch (err: any) {
+      res.status(500).json({ status: 'error', message: err.message });
+    }
+  }
+
+  // KHUSUS ADMIN: Hapus Pengguna
+  static async deleteUser(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      if (id === req.user!.id) {
+        return res.status(400).json({ status: 'error', message: 'Anda tidak dapat menghapus akun Anda sendiri' });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.ticket.deleteMany({ where: { participantId: id } });
+        await tx.registration.deleteMany({ where: { participantId: id } });
+        await tx.user.delete({ where: { id } });
+      });
+
+      res.json({ status: 'success', message: 'Pengguna berhasil dihapus dari platform' });
+    } catch (err: any) {
+      res.status(400).json({ status: 'error', message: 'Gagal menghapus pengguna: Pengguna memiliki acara aktif' });
     }
   }
 }

@@ -36,9 +36,38 @@ export class EventController {
     }
   }
 
+  // MANAJEMEN KATEGORI
   static async getCategories(req: Request, res: Response) {
-    const categories = await prisma.category.findMany();
+    const categories = await prisma.category.findMany({
+      include: { _count: { select: { events: true } } },
+    });
     res.json({ status: 'success', data: categories });
+  }
+
+  static async createCategory(req: Request, res: Response) {
+    try {
+      const { name } = req.body;
+      if (!name || name.trim().length < 2) {
+        return res.status(400).json({ status: 'error', message: 'Nama kategori minimal 2 karakter' });
+      }
+      const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+      const category = await prisma.category.create({
+        data: { name: name.trim(), slug },
+      });
+      res.status(201).json({ status: 'success', data: category });
+    } catch (err: any) {
+      res.status(400).json({ status: 'error', message: 'Kategori dengan nama ini sudah ada' });
+    }
+  }
+
+  static async deleteCategory(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      await prisma.category.delete({ where: { id } });
+      res.json({ status: 'success', message: 'Kategori berhasil dihapus' });
+    } catch (err: any) {
+      res.status(400).json({ status: 'error', message: 'Gagal menghapus kategori: Masih ada acara yang terhubung' });
+    }
   }
 
   static async create(req: Request, res: Response) {
